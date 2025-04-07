@@ -40,7 +40,7 @@ export const handleSocialCallback = async (req:Request, res:Response): Promise<v
     });
 
     res.redirect(`${process.env.FRONTEND_ORIGIN}/loginSuccess`);
-  } catch (err) {
+  } catch {
     res.redirect(`${process.env.FRONTEND_ORIGIN}/login`);
   }
 };
@@ -59,7 +59,7 @@ export const handleSocialLinkCallback = (req:Request, res:Response): void => {
 export const unlinkSocialAccount = async (req:Request, res:Response): Promise<void> => {
   try {
     const { provider } = req.body;
-    await unlinkAccount(req.user?.id, provider);
+    await unlinkAccount(req.user?.id as string, provider);
     res.status(200).json();
   } catch (error) {
     sendFormattedError(res, error as CustomError, "소셜 계정 연동 해제 중 오류가 발생했습니다.")

@@ -17,9 +17,7 @@ import {
 import {
   LoginResponseDto,
 } from '@/types/dto/auth/auth.response.dto'
-import {
-  RefreshTokenPayload
-} from '@/types/Auth'
+import {RefreshTokenPayload, UserTypes} from "@/types/User";
 
 
 const accessTokenMaxAge = Number(process.env.JWT_EXPIRATION) * 1000;
@@ -29,9 +27,9 @@ export const registerController = async (
     res: Response
 ): Promise<void> => {
   try {
-    const {id, email, password, name, marketingConsent} = req.body;
+    const {username, email, password, name, marketingConsent} = req.body;
     await registerUser({
-      id,
+      username,
       email,
       password,
       name,
@@ -39,7 +37,7 @@ export const registerController = async (
     });
 
     res.status(201).json();
-  } catch (error: unknown) {
+  } catch (error) {
     sendFormattedError(res, error as CustomError, "회원가입 중 오류가 발생했습니다.")
   }
 };
@@ -50,8 +48,8 @@ export const loginController = async (
     res: Response<LoginResponseDto>
 ): Promise<void> => {
   try {
-    const {id, password, rememberMe} = req.body ;
-    const tokens = await loginUser({id, password, rememberMe});
+    const {username, password, rememberMe} = req.body ;
+    const tokens = await loginUser({username, password, rememberMe});
 
     setCookie(res, 'accessToken', tokens.accessToken, {
       maxAge: accessTokenMaxAge
@@ -61,7 +59,7 @@ export const loginController = async (
     });
 
     res.status(200).json({success: true});
-  } catch (error: unknown) {
+  } catch (error) {
     sendFormattedError(res, error as CustomError, "로그인 중 오류가 발생했습니다.")
   }
 };
@@ -105,14 +103,14 @@ export const renewTokenController = async (
     const {refreshToken} = req.cookies;
 
     const decodedData = await verifyRefreshToken(refreshToken);
-    const user = await getUserById(decodedData.id);
+    const user = await getUserById(decodedData.id) as unknown as UserTypes;
     const tokens = await generateTokens(user, decodedData.rememberMe, decodedData.ttl);
 
     setCookie(res, 'accessToken', tokens.accessToken, {maxAge: accessTokenMaxAge});
     setCookie(res, 'refreshToken', tokens.refreshToken, {maxAge: tokens.refreshTokenTTL * 1000});
 
     res.status(200).json();
-  } catch (error: unknown) {
+  } catch (error) {
     sendFormattedError(res, error as CustomError, "토큰 갱신 중 오류가 발생했습니다.")
   }
 };

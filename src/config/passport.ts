@@ -4,7 +4,7 @@ import { PassportStatic } from "passport";
 import { configureSocialStrategies } from "@/services/auth/socialAuthStrategy";
 import { configureLinkingStrategies } from "@/services/auth/linkSocialStrategy";
 
-export const passportStrategy = (passport : PassportStatic) => {
+export const passportStrategy = (passport : PassportStatic): void => {
   // 소셜 로그인 인증 전략
   configureSocialStrategies(passport);
 

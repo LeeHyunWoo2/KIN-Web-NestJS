@@ -1,20 +1,20 @@
 import {Router} from 'express';
 import {
-  getCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory
-} from '../../controllers/notes/categoryController';
-import {injectAuthenticatedUser} from '../../middleware/auth/injectAuthenticatedUser';
+  getCategoriesController,
+  createCategoryController,
+  updateCategoryController,
+  deleteCategoryController
+} from '@/controllers/notes/categoryController';
+import {injectAuthenticatedUser} from '@/middleware/auth/injectAuthenticatedUser';
 
 const categoryRouter: Router = Router();
 
-categoryRouter.get('/', injectAuthenticatedUser, getCategories);
+categoryRouter.get('/', injectAuthenticatedUser, getCategoriesController);
 
-categoryRouter.post('/', injectAuthenticatedUser, createCategory);
+categoryRouter.post('/', injectAuthenticatedUser, createCategoryController);
 
-categoryRouter.put('/:categoryId', injectAuthenticatedUser, updateCategory);
+categoryRouter.put('/:categoryId', injectAuthenticatedUser, updateCategoryController);
 
-categoryRouter.delete('/', injectAuthenticatedUser, deleteCategory);
+categoryRouter.delete('/', injectAuthenticatedUser, deleteCategoryController);
 
 export {categoryRouter};

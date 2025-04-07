@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
+import { Schema, model, models } from "mongoose";
+import { NoteTypes } from "@/types/Note";
 
-const NoteSchema = new mongoose.Schema({
+const NoteSchema = new Schema<NoteTypes>({
   title: {
     type: String,
     default: '',
@@ -10,7 +11,7 @@ const NoteSchema = new mongoose.Schema({
     default: Buffer.alloc(0),
   },
   user_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'User', // 작성자 참조
     required: true,
   },
@@ -20,7 +21,7 @@ const NoteSchema = new mongoose.Schema({
   },
   category: {
     _id: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       default: null,
     },
     name: {
@@ -32,7 +33,7 @@ const NoteSchema = new mongoose.Schema({
     type: [
       {
         id: {
-          type: mongoose.Schema.Types.ObjectId,
+          type: Schema.Types.ObjectId,
           ref: 'Tag',
         },
         name: {
@@ -75,4 +76,4 @@ const NoteSchema = new mongoose.Schema({
   versionKey: false // __v 필드 비활성화
 });
 
-module.exports = mongoose.model('Note', NoteSchema);
+export default models.Note || model<NoteTypes>("Note", NoteSchema);

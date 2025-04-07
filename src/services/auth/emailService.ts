@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 import { generateEmailVerificationToken, verifyEmailVerificationToken } from './tokenService';
-import {createHttpError} from "../../utils/createHttpError";
-import {EmailTokenPayload} from "../../types/Auth";
+import {createHttpError} from "@/utils/createHttpError";
+import {EmailTokenPayload} from "@/types/User";
 
 export const sendVerificationEmail = async (email : string): Promise<void> => {
   const token = generateEmailVerificationToken(email);

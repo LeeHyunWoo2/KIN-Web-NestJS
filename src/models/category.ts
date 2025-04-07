@@ -1,8 +1,9 @@
-import mongoose from 'mongoose';
+import { Schema, model, models } from "mongoose";
+import { CategoryTypes } from "@/types/Category";
 
-const CategorySchema = new mongoose.Schema({
+const CategorySchema = new Schema<CategoryTypes>({
   user_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'User', // 사용자 참조
     required: true,
   },
@@ -11,11 +12,12 @@ const CategorySchema = new mongoose.Schema({
     required: true,
   },
   parent_id: {
-    type: mongoose.Schema.Types.ObjectId, // 상위 카테고리
+    type: Schema.Types.ObjectId, // 상위 카테고리
     ref: 'Category',
     required: false,
   }
 }, {
   versionKey: false // __v 필드 비활성화
 });
-module.exports = mongoose.model('Category', CategorySchema);
+
+export default models.Category || model<CategoryTypes>("Category", CategorySchema);

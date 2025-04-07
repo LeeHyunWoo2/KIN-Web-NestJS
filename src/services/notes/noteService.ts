@@ -1,9 +1,19 @@
 import Note from '../../models/note';
+import {NoteTypes} from "@/types/Note";
 
-exports.getNotes = async (userId) => Note.find({user_id: userId})
-  .sort({created_at: -1});
+export const getNotes = async (
+    userId: string
+    ): Promise<NoteTypes[]> =>
+    Note.find({ user_id: userId }).sort({ created_at: -1 }).lean<NoteTypes[]>();
 
-exports.createNote = async (userId, title, content, category, tags, mode) => {
+export const createNote = async (
+    userId: string,
+    title: string,
+    content: string,
+    category: NoteTypes['category'],
+    tags: NoteTypes['tags'],
+    mode: NoteTypes['mode']
+): Promise<NoteTypes> => {
   const note = new Note({
     user_id: userId,
     title,
@@ -12,13 +22,21 @@ exports.createNote = async (userId, title, content, category, tags, mode) => {
     tags,
     mode,
   });
+
   return await note.save();
 };
 
-exports.updateNote = async (filter, updates) => {
+export const updateNote = async (
+    filter: {
+      _id: string;
+      user_id: string
+    },
+    updates: Partial<Omit<NoteTypes, 'user_id' | 'created_at'>>
+): Promise<NoteTypes | null> => {
   if (updates.content) {
     updates.content = Buffer.from(updates.content);
   }
+
   return Note.findOneAndUpdate(
       filter,
       { ...updates, updated_at: Date.now() },
@@ -26,4 +44,9 @@ exports.updateNote = async (filter, updates) => {
   );
 };
 
-exports.deleteNote = async (noteId) => Note.findByIdAndDelete(noteId);
+export const deleteNote = async (
+    noteId: string
+): Promise<void> => {
+  Note.findByIdAndDelete(noteId);
+  return;
+}

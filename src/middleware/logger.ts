@@ -43,6 +43,4 @@ const skipLog = (req : Request) => {
   return (req.method === 'GET' || req.method === 'OPTIONS') && excludedPaths.includes(fullPath)|| (req.method === 'POST' && fullPath === '/notes');
 };
 
-const logger = morgan(logFormat, { skip: skipLog });
-
-export default logger;
+export const logger = morgan(logFormat, { skip: skipLog });

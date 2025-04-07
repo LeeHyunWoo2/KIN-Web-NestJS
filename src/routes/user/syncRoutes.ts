@@ -1,10 +1,10 @@
 import {Router} from 'express';
-import {injectAuthenticatedUser} from '../../middleware/auth/injectAuthenticatedUser';
+import {injectAuthenticatedUser} from '@/middleware/auth/injectAuthenticatedUser';
 import {
   updateUserActivityTimeController,
   getLastActivityController,
   syncAllController
-} from "../../controllers/user/syncController";
+} from "@/controllers/user/syncController";
 
 const syncRouter: Router = Router();
 

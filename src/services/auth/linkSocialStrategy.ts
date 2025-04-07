@@ -1,11 +1,14 @@
 import { PassportStatic } from 'passport';
 import { Request } from 'express';
-import {Strategy as GoogleStrategy, Profile as GoogleProfile} from 'passport-google-oauth20';
+import {
+  Strategy as GoogleStrategy,
+  Profile as GoogleProfile,
+  VerifyCallback
+} from 'passport-google-oauth20';
 import {Strategy as KakaoStrategy, Profile as KakaoProfile} from 'passport-kakao';
 import {Strategy as NaverStrategy, Profile as NaverProfile} from 'passport-naver';
 import User from '../../models/user';
-import { HydratedDocument } from "mongoose";
-import { UserTypes } from "../../types/User";
+import {AccessTokenPayload} from "@/types/User";
 
 // 소셜 추가연동 passport.js 인증 전략
 export const configureLinkingStrategies = (passport : PassportStatic) => {
@@ -20,7 +23,7 @@ export const configureLinkingStrategies = (passport : PassportStatic) => {
       _accessToken : string,
       refreshToken : string,
       profile : GoogleProfile,
-      done : (error : any, user? : HydratedDocument<UserTypes> | false) => void
+      done : VerifyCallback
   ) => {
     try {
       const providerId = profile.id;
@@ -53,7 +56,7 @@ export const configureLinkingStrategies = (passport : PassportStatic) => {
       _accessToken : string,
       refreshToken : string,
       profile : KakaoProfile,
-      done : (error : any, user? : HydratedDocument<UserTypes> | false) => void
+      done: (error: any, user?: AccessTokenPayload | false) => void
   ) => {
     try {
       const providerId = profile.id;
@@ -85,7 +88,7 @@ export const configureLinkingStrategies = (passport : PassportStatic) => {
       _accessToken : string,
       refreshToken : string,
       profile : NaverProfile,
-      done : (error : any, user? : HydratedDocument<UserTypes> | false) => void
+      done: (error: any, user?: AccessTokenPayload | false) => void
   ) => {
     try {
       const providerId = profile.id;

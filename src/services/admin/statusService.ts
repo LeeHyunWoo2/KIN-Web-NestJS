@@ -3,7 +3,19 @@ import { isConnected } from '@/config/redis';
 import os from 'os';
 
 // 백엔드 서버 상태 대시보드 (관리자용)
-export const getStatus = async () => {
+export const getStatus = async (): Promise<{
+  mongodb: string;
+  redis: string;
+  uptime: number;
+  nodeUptime: number;
+  memoryUsage: NodeJS.MemoryUsage;
+  cpuUsage: NodeJS.CpuUsage;
+  cpuUsagePerCore: number[];
+  cpuTotalUsage: number;
+  cpuFreeMemory: number;
+  loadAverage: number[];
+  serverTime: string
+}> => {
   const mongodbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
   const redisStatus = isConnected ? 'Connected' : 'Disconnected';
   const now = new Date();

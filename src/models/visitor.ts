@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
+import { Schema, model, models } from "mongoose";
+import { VisitorTypes } from "@/types/Visitor";
 
-const visitorSchema = new mongoose.Schema({
+const VisitorSchema = new Schema<VisitorTypes>({
   visitorId: {
     type: String,
     required: true,
@@ -56,4 +57,4 @@ const visitorSchema = new mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model('Visitor', visitorSchema);
+export default models.Visitor || model<VisitorTypes>("Visitor", VisitorSchema);

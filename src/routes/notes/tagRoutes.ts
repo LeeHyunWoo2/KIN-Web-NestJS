@@ -1,20 +1,19 @@
 import {Router} from 'express';
-import {injectAuthenticatedUser} from "../../middleware/auth/injectAuthenticatedUser";
+import {injectAuthenticatedUser} from "@/middleware/auth/injectAuthenticatedUser";
 import {
-  getTags,
-  createTag,
-  updateTag,
-  deleteTag
-} from "../../controllers/notes/tagController";
+  getTagsController,
+  createTagController,
+  updateTagController,
+  deleteTagController} from "@/controllers/notes/tagController";
 
 const tagRouter: Router = Router();
 
-tagRouter.get('/', injectAuthenticatedUser, getTags);
+tagRouter.post('/', injectAuthenticatedUser, createTagController);
 
-tagRouter.post('/', injectAuthenticatedUser, createTag);
+tagRouter.get('/', injectAuthenticatedUser, getTagsController);
 
-tagRouter.put('/:tagId', injectAuthenticatedUser, updateTag);
+tagRouter.put('/:tagId', injectAuthenticatedUser, updateTagController);
 
-tagRouter.delete('/:tagId', injectAuthenticatedUser, deleteTag);
+tagRouter.delete('/:tagId', injectAuthenticatedUser, deleteTagController);
 
 export {tagRouter};

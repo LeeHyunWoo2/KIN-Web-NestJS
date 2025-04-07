@@ -32,7 +32,7 @@ socialRouter.get('/callback/:provider', (req, res) => {
   try {
     const { strategy, options } = getPassportOptions(provider, 'login-callback');
     passport.authenticate(strategy, options)(req, res, async () => {
-      await handleSocialCallback(req, res); // ✅ user는 req.user로 자동 주입됨
+      await handleSocialCallback(req, res);
     });
   } catch (error) {
     if (error instanceof Error){
@@ -64,7 +64,7 @@ socialRouter.get('/link/callback/:provider', injectAuthenticatedUser, (req, res)
   try {
     const { strategy, options } = getPassportOptions(provider, 'link-callback');
     passport.authenticate(strategy, options)(req, res, () => {
-      handleSocialLinkCallback(req, res); // ✅ req.user 사용
+      handleSocialLinkCallback(req, res);
     });
   } catch (error) {
     if (error instanceof Error){

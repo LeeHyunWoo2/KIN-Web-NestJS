@@ -1,5 +1,5 @@
 export interface RegisterRequestDto {
-  id: string;
+  username: string;
   email: string;
   password: string;
   name: string;
@@ -7,17 +7,11 @@ export interface RegisterRequestDto {
 }
 
 export interface LoginRequestDto {
-  id: string;
+  username: string;
   password: string;
   rememberMe: boolean; // 기본값 false
 }
 
-export interface ChangeToLocalAccountRequestDto {
-  newPassword: string;
+export interface EmailTokenRequestDto {
   email: string;
-}
-
-export interface SocialLinkCallbackDto {
-  accessToken: string;
-  provider: 'google' | 'kakao' | 'naver';
 }

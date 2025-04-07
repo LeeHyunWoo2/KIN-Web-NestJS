@@ -6,7 +6,7 @@ import { connectDB } from './config/database';
 import { globalMiddleware } from './middleware/globalMiddleware';
 import { globalLimiter, apiLimiter } from './middleware/rateLimiter';
 import routes from './routes';
-import { wss } from './services/admin/websocketService';
+import { attachToServer } from './services/admin/websocketService';
 import passport from 'passport';
 import { passportStrategy } from './config/passport';
 import { globalErrorHandler } from './middleware/errorHandler';
@@ -53,4 +53,4 @@ const server = serverConfig.httpsOptions
       console.log(`HTTP 서버가 포트 ${serverConfig.port}에서 실행 중입니다.`);
     });
 
-wss.attachToServer(server);
+attachToServer(server);

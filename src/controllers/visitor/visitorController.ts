@@ -1,53 +1,71 @@
-import visitorService from "../../services/visitor/visitorService";
-import { createErrorResponse } from "../../utils/formatErrorResponse";
+import {
+  getVisitorList,
+  recordVisitorInfo,
+  trackVisitorActivity
+} from "@/services/visitor/visitorService";
+import {sendFormattedError} from "@/utils/sendFormattedError";
+import {CustomError} from "@/types/CustomError";
+import {Request, Response} from "express";
+import {
+  RecordVisitorInfoRequestDto,
+  TrackVisitorActivityRequestDto
+} from "@/types/dto/visitor/visitor.request.dto";
+import {VisitorInfoInput} from "@/types/Visitor";
+import {VisitorSummaryResponse} from "@/types/dto/visitor/visitor.response.dto";
+
+const getHeaderString = (value: string | string[] | undefined, fallback = "unknown"): string =>
+    Array.isArray(value) ? value[0] : value ?? fallback;
 
 // 관리자용
-export const getVisitorListController = async (req, res) => {
+export const getVisitorListController = async (
+    _req: Request,
+    res: Response<VisitorSummaryResponse[]>,
+): Promise<void> => {
   try {
-    const visitorList = await visitorService.getVisitorList()
+    const visitorList = await getVisitorList()
     res.status(200).json(visitorList);
   } catch (error) {
-    console.log(error)
-    const {statusCode, message} = createErrorResponse(error.status || 500,
-        error.message || "방문자 기록 로드 중 오류 발생");
-    res.status(statusCode).json({message, skipToast: true});
+    sendFormattedError(res, error as CustomError, "방문자 기록 로드 중 오류 발생", {skipToast: true});
   }
 }
 
-export const recordVisitorInfoController = async (req, res) => {
+export const recordVisitorInfoController = async (
+    req: Request<{}, {}, RecordVisitorInfoRequestDto>,
+    res: Response,
+): Promise<void> => {
   try {
     const {visitorId, path} = req.body;
-    const ip = req.headers["cf-connecting-ip"] || "localhost";
-    const country = req.headers["cf-ipcountry"] || "unknown";
-    const device = req.headers["sec-ch-ua-platform"] || "unknown";
-    const browser = req.headers["sec-ch-ua"] || "unknown";
-    const userAgent = req.headers["user-agent"] || "unknown";
-    const referrer = req.headers["referer"] || "direct";
-
-    await visitorService.recordVisitorInfo({visitorId, ip, country, device, browser, userAgent, referrer, path});
+    const input: VisitorInfoInput = {
+      visitorId,
+      path,
+      ip: getHeaderString(req.headers["cf-connecting-ip"], "localhost"),
+      country: getHeaderString(req.headers["cf-ipcountry"]),
+      device: getHeaderString(req.headers["sec-ch-ua-platform"]),
+      browser: getHeaderString(req.headers["sec-ch-ua"]),
+      userAgent: getHeaderString(req.headers["user-agent"]),
+      referrer: getHeaderString(req.headers["referer"], "direct"),
+    };
+    await recordVisitorInfo(input);
     res.status(201).end();
   } catch (error) {
-    const {statusCode, message} = createErrorResponse(error.status || 500,
-        error.message || "방문자 기록 저장 중 오류 발생");
-    res.status(statusCode).json({message, skipToast: true});
+    sendFormattedError(res, error as CustomError, "방문자 기록 저장 중 오류 발생", {skipToast: true});
   }
 };
 
-export const trackVisitorActivityController = async (req, res) => {
+export const trackVisitorActivityController = async (
+    req: Request<{}, {}, TrackVisitorActivityRequestDto>,
+    res: Response,
+): Promise<void> => {
   try {
     const { visitorId, stayDuration, trackUrl, visitedAt } = req.body;
-    await visitorService.trackVisitorActivity({
+    await trackVisitorActivity({
       visitorId,
       stayDuration,
       trackUrl,
-      visitedAt,
+      visitedAt: new Date(visitedAt),
     });
     res.status(200).end();
   } catch (error) {
-    const { statusCode, message } = createErrorResponse(
-        error.status || 500,
-        error.message || "트래킹 데이터 저장 중 오류 발생"
-    );
-    res.status(statusCode).json({ message, skipToast: true });
+    sendFormattedError(res, error as CustomError, "트래킹 데이터 저장 중 오류 발생", {skipToast: true});
   }
 };

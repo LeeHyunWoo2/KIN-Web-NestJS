@@ -1,9 +1,14 @@
 import axios from 'axios';
 import {redisClient} from '@/config/redis';
-import jwt, {JwtPayload} from 'jsonwebtoken';
-import {AccessTokenUserPayload, TokenTypes, EmailTokenPayload} from "@/types/Auth";
+import jwt, {JsonWebTokenError, JwtPayload, TokenExpiredError} from 'jsonwebtoken';
+import {
+  AccessTokenPayload,
+  EmailTokenPayload,
+  RefreshTokenPayload, SocialAccountTypes,
+  TokenPair,
+  UserTypes
+} from "@/types/User";
 import {createHttpError} from "@/utils/createHttpError";
-import {SocialAccountTypes} from "@/types/User";
 
 const {
   JWT_SECRET,
@@ -18,10 +23,10 @@ const REFRESH_EXPIRATION = parseInt(process.env.REFRESH_EXPIRATION, 10);
 
 // JWT 토큰 발급
 export const generateTokens = async (
-    user: AccessTokenUserPayload,
+    user: UserTypes,
     rememberMe: boolean = false,
     existingTTL : number | null
-) : Promise<TokenTypes>=> {
+) : Promise<TokenPair>=> {
   const accessTokenTTL = parseInt(JWT_EXPIRATION, 10);
   let refreshTokenTTL: number;
 
@@ -67,7 +72,7 @@ export const generateTokens = async (
 // 액세스 토큰 검증
 export const verifyAccessToken = async (
     accessToken: string
-): Promise<AccessTokenUserPayload> => {
+): Promise<AccessTokenPayload> => {
   if (!accessToken) {
     const err = new Error('Access Denied.') as unknown as {code: string};
     err.code = 'TOKEN_MISSING';
@@ -90,10 +95,18 @@ export const verifyAccessToken = async (
       throw new Error('JwtPayload 타입에러');
     }
 
-    return decoded as AccessTokenUserPayload;
-  } catch (error) {
-    const err = new Error('Access Denied.') as unknown as {code: string};
-    err.code = 'TOKEN_INVALID';
+    return decoded as AccessTokenPayload;
+  } catch (error: any) {
+    const err = new Error('Access Denied.') as unknown as { code: string };
+
+    if (error instanceof TokenExpiredError) {
+      err.code = 'TOKEN_EXPIRED';
+    } else if (error instanceof JsonWebTokenError) {
+      err.code = 'TOKEN_INVALID';
+    } else {
+      err.code = 'UNKNOWN_ERROR';
+    }
+
     throw err;
   }
 };
@@ -102,11 +115,7 @@ export const verifyAccessToken = async (
 // 리프레시 토큰 검증
 export const verifyRefreshToken = async (
     refreshToken: string
-): Promise<{
-  id: string;
-  rememberMe: boolean;
-  ttl: number;
-}> => {
+): Promise<RefreshTokenPayload> => {
   try {
     const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET) as JwtPayload;
     const userId = decoded.id;
@@ -145,7 +154,7 @@ export const verifyRefreshToken = async (
       rememberMe: storedToken.rememberMe,
       ttl: existingTokenTTL,
     };
-  } catch (error) {
+  } catch {
     throw createHttpError(419, "Access denied.");
   }
 };
@@ -199,8 +208,7 @@ export const generateOAuthToken = async (
       throw new Error();
     }
 
-  } catch (error) {
-    console.log(error)
+  } catch {
     throw new Error;
   }
 };

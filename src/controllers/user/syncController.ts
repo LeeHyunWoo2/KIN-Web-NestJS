@@ -1,39 +1,44 @@
 import { Request, Response } from "express";
-import syncService from '../../services/user/syncService';
-import { createErrorResponse } from "../../utils/formatErrorResponse";
-import { getNotes } from "../../services/notes/noteService";
-import { getCategories } from "../../services/notes/categoryService";
-import { getTags } from "../../services/notes/tagService";
+import { updateUserActivityTime, getUserLastActivity } from '@/services/user/syncService';
+import { getNotes } from "@/services/notes/noteService";
+import { getCategories } from "@/services/notes/categoryService";
+import { getTags } from "@/services/notes/tagService";
+import {sendFormattedError} from "@/utils/sendFormattedError";
+import {CustomError} from "@/types/CustomError";
 
-export const updateUserActivityTimeController = async (req : Request, res : Response) => {
-  const userId = req.user?.id;
-  const activityTime = req.body.currentTime;
+export const updateUserActivityTimeController = async (
+    req : Request<{}, {}, {currentTime: number}>,
+    res : Response
+): Promise<void> => {
+  const activityTime = req.body.currentTime as number;
 
   try {
-    const updatedUser = await syncService.updateUserActivityTime(userId, activityTime);
-    res.json({lastActivity: updatedUser});
+    await updateUserActivityTime(req.user?.id as string, activityTime);
+    res.status(200).json();
   } catch (error) {
-    const { statusCode, message } = createErrorResponse(error.status || 500, error.message || "유저 활동 시간 갱신 중 오류가 발생했습니다.");
-    res.status(statusCode).json({ message });
+    sendFormattedError(res, error as CustomError, "유저 활동 시간 갱신 중 오류가 발생했습니다.");
   }
 };
 
-export const getLastActivityController = async (req : Request, res : Response) => {
-  const userId = req.user?.id;
-
+export const getLastActivityController = async (
+    req : Request,
+    res : Response
+): Promise<void> => {
   try {
-    const lastActivity = await syncService.getUserLastActivity(userId);
+    const lastActivity = await getUserLastActivity(req.user?.id as string);
     res.json({ lastActivity });
   } catch (error) {
-    const { statusCode, message } = createErrorResponse(error.status || 500, error.message || "유저 마지막 활동 시간 조회 중 오류가 발생했습니다.");
-    res.status(statusCode).json({ message });
+    sendFormattedError(res, error as CustomError, "유저 마지막 활동 시간 조회 중 오류가 발생했습니다.");
   }
 };
 
 // 통합 데이터 반환
-export const syncAllController = async (req, res) => {
+export const syncAllController = async (
+    req: Request,
+    res: Response,
+): Promise<void> => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id as string;
 
     const [notes, categories, tags] = await Promise.all([
       getNotes(userId),
@@ -47,7 +52,6 @@ export const syncAllController = async (req, res) => {
       tags,
     });
   } catch (error) {
-    const { statusCode, message } = createErrorResponse(error.status || 500, error.message || "데이터를 가져오는 중 오류가 발생했습니다.");
-    res.status(statusCode).json({ message });
+    sendFormattedError(res, error as CustomError, "데이터를 가져오는 중 오류가 발생했습니다.");
   }
 };

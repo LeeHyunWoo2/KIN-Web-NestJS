@@ -1,20 +1,20 @@
 import {Router} from 'express';
 import {
-  getNotes,
-  createNote,
-  updateNotes,
-  deleteNotes,
-} from '../../controllers/notes/noteController';
-import {injectAuthenticatedUser} from '../../middleware/auth/injectAuthenticatedUser';
+  getNotesController,
+  createNoteController,
+  updateNotesController,
+  deleteNotesController,
+} from '@/controllers/notes/noteController';
+import {injectAuthenticatedUser} from '@/middleware/auth/injectAuthenticatedUser';
 
 const noteRouter: Router = Router();
 
-noteRouter.get('/', injectAuthenticatedUser, getNotes);
+noteRouter.get('/', injectAuthenticatedUser, getNotesController);
 
-noteRouter.post('/', injectAuthenticatedUser, createNote);
+noteRouter.post('/', injectAuthenticatedUser, createNoteController);
 
-noteRouter.put('/', injectAuthenticatedUser, updateNotes);
+noteRouter.put('/', injectAuthenticatedUser, updateNotesController);
 
-noteRouter.delete('/', injectAuthenticatedUser, deleteNotes);
+noteRouter.delete('/', injectAuthenticatedUser, deleteNotesController);
 
 export {noteRouter};

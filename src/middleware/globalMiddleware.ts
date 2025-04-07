@@ -7,7 +7,8 @@ import compression from 'compression';
 import mongoSanitize from 'express-mongo-sanitize';
 import { xssSanitizer} from "./xssSanitizer";
 import hpp from 'hpp';
-import logger from "./logger";
+import { logger } from "./logger";
+import {setRealIp} from "@/middleware/setRealIp";
 
 const originWhitelist = [
   process.env.FRONTEND_ORIGIN || 'http://localhost:3000',
@@ -19,6 +20,7 @@ export const globalMiddleware = (app : Application) : void => {
   app.use(express.json());
   app.use(cookieParser());
   app.use(bodyParser.json());
+  app.use(setRealIp);
 
   app.use(
       cors({

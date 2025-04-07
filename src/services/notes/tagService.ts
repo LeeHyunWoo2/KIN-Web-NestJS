@@ -1,22 +1,46 @@
 import Tag from '../../models/tag';
 import Note from '../../models/note';
+import {GetTagResultTypes, TagTypes} from "@/types/Tag";
+import {createHttpError} from "@/utils/createHttpError";
 
-exports.createTag = async (user_id, name) => await Tag.create({ name, user_id });
+export const createTag = async (
+    user_id: string,
+    name: string,
+): Promise<TagTypes> => await Tag.create({name, user_id})
 
-exports.getTags = async (user_id) => 
-   Tag.find({ user_id }).select('name') // mongoose는 select를 쓰면 _id를 함께 반환하기 때문에 name만 명시
+export const getTags = async (
+    user_id: string
+    ): Promise<GetTagResultTypes[]> =>
+    Tag.find({user_id}).select('name').lean<GetTagResultTypes[]>()
 ;
 
-exports.updateTag = async (user_id, tagId, name) => Tag.findOneAndUpdate(
+export const updateTag = async (
+    user_id: string,
+    tagId: string,
+    name: string,
+): Promise<TagTypes> => {
+  const updatedTag =await Tag.findOneAndUpdate(
       {_id: tagId, user_id},
       {name},
       {new: true}
   );
+  if(!updatedTag){
+    createHttpError(404, '태그를 찾을 수 없습니다.')
+  }
+  return updatedTag;
+}
 
-exports.deleteTag = async (user_id, tagId, noteIds) => {
+export const deleteTag = async (
+    user_id: string,
+    tagId: string,
+    noteIds?: string[]
+): Promise<{
+  tagId: string;
+  updatedNotes: string[]
+}> => {
   const tag = await Tag.findOneAndDelete({ _id: tagId, user_id });
   if (!tag) {
-    throw new Error('태그를 찾을 수 없습니다.');
+    throw createHttpError(404, '해당 태그를 찾을 수 없습니다.');
   }
 
   // 해당 태그가 사용된 노트에 반영
@@ -26,6 +50,5 @@ exports.deleteTag = async (user_id, tagId, noteIds) => {
         { $pull: { tags: { _id: tagId } } }
     );
   }
-
   return { tagId, updatedNotes: noteIds || [] };
 };

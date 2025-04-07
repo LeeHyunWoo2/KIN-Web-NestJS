@@ -33,7 +33,7 @@ export const checkAdminSessionAs404 = async (req: Request, res: Response) : Prom
       res.status(404).json(); // 관리자 권한 아님
       return;
     }
-  } catch (error) {
+  } catch {
     // 어떤 이유든 관리자 인증 실패 → 404
     res.status(404).json();
     return;

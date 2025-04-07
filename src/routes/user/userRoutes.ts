@@ -7,8 +7,8 @@ import {
   getUserByInputController,
   getUserPublicProfileController,
   resetPasswordController
-} from '../../controllers/user/userController';
-import {injectAuthenticatedUser} from '../../middleware/auth/injectAuthenticatedUser';
+} from '@/controllers/user/userController';
+import {injectAuthenticatedUser} from '@/middleware/auth/injectAuthenticatedUser';
 
 const userRouter: Router = Router();
 

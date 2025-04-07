@@ -2,9 +2,9 @@ import { Schema, model, models } from 'mongoose';
 import { UserTypes } from "@/types/User";
 
 const UserSchema = new Schema<UserTypes>({
-  id: {
+  username: {
     type: String,
-    required: false, // 소셜 only 계정은 id가 없음
+    required: false, // 소셜 only 계정은 username이 없음
     unique: true,
     sparse: true, // null 은 무시
   },

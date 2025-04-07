@@ -1,16 +1,18 @@
-import mongoose from 'mongoose';
+import { Schema, model, models } from "mongoose";
+import { TagTypes } from "@/types/Tag";
 
-const TagSchema = new mongoose.Schema({
+const TagSchema = new Schema<TagTypes>({
   name: {
     type: String,
     required: true,
   },
   user_id: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'User', // 태그 소유자 참조
     required: true,
   },
 }, {
   versionKey: false // __v 필드 비활성화
 });
-module.exports = mongoose.model('Tag', TagSchema);
+
+export default models.Tag || model<TagTypes>("Tag", TagSchema);

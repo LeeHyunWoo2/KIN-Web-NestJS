@@ -1,18 +1,19 @@
-import {UserTypes, DecodedUserTypes} from "../User";
+import {DecodedUser, UserTypes} from '../User';
 
 declare global {
   namespace Express {
-    interface User extends UserTypes {}
+    interface User extends DecodedUser {}
     interface Request {
+      user?: DecodedUser;
       authResult?: {
         error?: unknown;
-        user?: DecodedUserTypes;
-      }
-      user?: DecodedUserTypes;
+        user?: UserTypes;
+      };
       headers?: {
         [key: string]: string | undefined;
         'x-skip-interceptor'?: string;
-      }
+      };
+      realIp?: string;
     }
   }
 }

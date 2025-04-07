@@ -6,20 +6,22 @@ import {
   LoginRequestDto,
   RegisterRequestDto,
 } from '@/types/dto/auth/auth.request.dto';
-import {AccessTokenUserPayload, TokenTypes} from '@/types/Auth';
+import {AccessTokenPayload, TokenPair} from '@/types/User';
 
 // 회원가입 (로컬 계정)
-export const registerUser = async (data: RegisterRequestDto): Promise<void>  => {
-  const { id, email, password, name, marketingConsent } = data;
+export const registerUser = async (
+    data: RegisterRequestDto
+): Promise<void>  => {
+  const { username, email, password, name, marketingConsent } = data;
 
-  const existingUser = await User.findOne({ $or: [{ email }, { id }] });
+  const existingUser = await User.findOne({ $or: [{ email }, { username }] });
   if (existingUser) {
     throw createHttpError(400, "이미 사용 중인 이메일 혹은 ID입니다.");
   }
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = new User({
-    id,
+    username,
     email,
     password: hashedPassword,
     name,
@@ -27,7 +29,7 @@ export const registerUser = async (data: RegisterRequestDto): Promise<void>  => 
     socialAccounts: [
       {
         provider: 'local',
-        providerId: id,
+        providerId: username,
       },
     ],
     termsAgreed: true,
@@ -36,10 +38,10 @@ export const registerUser = async (data: RegisterRequestDto): Promise<void>  => 
   return;
 };
 
-export const loginUser = async (data: LoginRequestDto): Promise<TokenTypes> => {
-  const { id, password, rememberMe } = data;
+export const loginUser = async (data: LoginRequestDto): Promise<TokenPair> => {
+  const { username, password, rememberMe } = data;
 
-  const user = await User.findOne({ id });
+  const user = await User.findOne({ username });
   const isPasswordValid = user ? await bcrypt.compare(password, user.password) : false;
 
   if (!user || !isPasswordValid) {
@@ -51,7 +53,7 @@ export const loginUser = async (data: LoginRequestDto): Promise<TokenTypes> => {
 };
 
 // 사용자 정보 조회 (토큰 갱신용)
-export const getUserById = async (userId : string) : Promise<AccessTokenUserPayload> => {
+export const getUserById = async (userId : string) : Promise<AccessTokenPayload> => {
   const user = await User.findById(userId).select('-password');
   if (!user) {
     throw createHttpError(400, "유저 정보를 찾을 수 없습니다.");

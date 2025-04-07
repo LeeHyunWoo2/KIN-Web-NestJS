@@ -1,24 +1,27 @@
 import User from '../../models/user';
 
-async function updateUserActivityTime(userId, activityTime) {
+export const updateUserActivityTime = async (
+    userId: string,
+    activityTime: number
+): Promise<void> => {
   try {
-    return await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
         userId,
         {lastActivity: activityTime},
         {new: true}
     );
-  } catch (error) {
+  } catch {
     throw new Error;
   }
 }
 
-async function getUserLastActivity(userId) {
+export const getUserLastActivity = async (
+    userId: string
+): Promise<Date> => {
   try {
     const user = await User.findById(userId).select('lastActivity');
     return user.lastActivity;
-  } catch (error) {
+  } catch {
     throw new Error;
   }
 }
-
-module.exports = { updateUserActivityTime, getUserLastActivity };

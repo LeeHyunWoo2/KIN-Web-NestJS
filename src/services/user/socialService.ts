@@ -1,19 +1,22 @@
 import User from '../../models/user';
 import axios from 'axios';
 import { generateOAuthToken } from '../auth/tokenService';
+import {createHttpError} from "@/utils/createHttpError";
+import {SocialAccountTypes} from "@/types/User";
 
 // 소셜 연동 해제
-export const unlinkAccount = async (userId, provider) => {
+export const unlinkAccount = async (
+    userId: string,
+    provider: 'google' | 'kakao' | 'naver',
+): Promise<void> => {
   try {
     const user = await User.findById(userId);
     if (!user) {
-      const error = new Error('사용자를 찾을 수 없습니다.');
-      error.status = 404;
-      throw error;
+      throw createHttpError(404, "사용자를 찾을 수 없습니다.")
     }
 
     // '소셜 only 계정' 의 마지막 소셜 연동 해제 방지 (로컬도, 소셜도 아닌 계정이 생기는 것을 방지)
-    const socialAccounts = user.socialAccounts.filter(acc => acc.provider !== provider);
+    const socialAccounts = user.socialAccounts.filter((acc: SocialAccountTypes) => acc.provider !== provider);
 
     const oauthToken = await generateOAuthToken(user, provider);
 
@@ -22,7 +25,7 @@ export const unlinkAccount = async (userId, provider) => {
 
     await user.save();
 
-    return user;
+    return;
   } catch (error) {
     throw error;
   }
@@ -30,7 +33,10 @@ export const unlinkAccount = async (userId, provider) => {
 
 
 // 플랫폼에게 연동 해제 요청
-export const revokeSocialAccess = async (provider, token) => {
+export const revokeSocialAccess = async (
+    provider: 'google' | 'kakao' | 'naver',
+    token: string
+): Promise<void> => {
   try {
     if (provider === 'google') {
       await axios.post(`https://oauth2.googleapis.com/revoke?token=${token}`);
