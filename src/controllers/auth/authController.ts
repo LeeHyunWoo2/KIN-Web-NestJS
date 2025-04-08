@@ -49,7 +49,7 @@ export const loginController = async (
 ): Promise<void> => {
   try {
     const {username, password, rememberMe} = req.body ;
-    const tokens = await loginUser({username, password, rememberMe});
+    const tokens = await loginUser(username, password, rememberMe);
 
     setCookie(res, 'accessToken', tokens.accessToken, {
       maxAge: accessTokenMaxAge

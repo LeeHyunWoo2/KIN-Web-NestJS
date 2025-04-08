@@ -1,4 +1,6 @@
 import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Application } from 'express';
 import https from 'https';
 import { serverConfig } from './config/serverConfig';
@@ -11,7 +13,6 @@ import passport from 'passport';
 import { passportStrategy } from './config/passport';
 import { globalErrorHandler } from './middleware/errorHandler';
 
-dotenv.config();
 
 process.on('uncaughtException', (err) => {
   console.error('[에러] Uncaught Exception:', err);

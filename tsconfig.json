@@ -5,6 +5,7 @@
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
+    "typeRoots": ["./src/types", "./node_modules/@types"],
     "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true,

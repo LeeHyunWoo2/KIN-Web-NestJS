@@ -1,9 +1,10 @@
+
+// @ts-ignore
 import bcrypt from 'bcryptjs';
 import User from '../../models/user';
 import { generateTokens } from './tokenService';
 import { createHttpError } from "@/utils/createHttpError";
 import {
-  LoginRequestDto,
   RegisterRequestDto,
 } from '@/types/dto/auth/auth.request.dto';
 import {AccessTokenPayload, TokenPair} from '@/types/User';
@@ -38,9 +39,11 @@ export const registerUser = async (
   return;
 };
 
-export const loginUser = async (data: LoginRequestDto): Promise<TokenPair> => {
-  const { username, password, rememberMe } = data;
-
+export const loginUser = async (
+    username: string,
+    password: string,
+    rememberMe: boolean
+): Promise<TokenPair> => {
   const user = await User.findOne({ username });
   const isPasswordValid = user ? await bcrypt.compare(password, user.password) : false;
 

@@ -47,7 +47,7 @@ export const getUserByInputController = async (
     res: Response
 ): Promise<void> => {
   try{
-    const {input, inputType, fetchUserId}= req.body;
+    const {input, inputType, fetchUsername}= req.body;
 
     const query: FindUserQuery = { input, inputType };
     const user: FindUserQueryData = await getUserByQuery(query);
@@ -60,8 +60,8 @@ export const getUserByInputController = async (
     } else {
        checkAccountType = "Local";
     }
-    if(fetchUserId){
-      res.status(200).json({signal: 'user_found', accountType: checkAccountType, id: user.username});
+    if(fetchUsername){
+      res.status(200).json({signal: 'user_found', accountType: checkAccountType, username: user.username});
     } else {
       res.status(200).json({signal: 'user_found', accountType: checkAccountType, email: user.email});
     }

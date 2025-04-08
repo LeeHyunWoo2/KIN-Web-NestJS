@@ -2,6 +2,7 @@ import User from '../../models/user';
 import Note from '../../models/note';
 import Category from '../../models/category';
 import Tag from '../../models/tag';
+// @ts-ignore
 import bcrypt from 'bcryptjs';
 import { generateOAuthToken } from '../auth/tokenService';
 import { revokeSocialAccess } from './socialService'; // 연동 해제를 위한 서비스 호출
@@ -58,7 +59,7 @@ export const getUserPublicProfile = async (
 export const getUserById = async (
     userId: string
 ): Promise<SafeUserInfo> => {
-  const user = await User.findById(userId).select('_id, -password, -passwordHistory, -deleteQueue');
+  const user = await User.findById(userId);
   if (!user) {
     throw new Error;
   }
@@ -74,8 +75,8 @@ export const getUserByQuery = async (
 
   if (inputType === 'email') {
     user = await User.findOne({email: input});
-  } else if (inputType === 'id') {
-    user = await User.findOne({id: input});
+  } else if (inputType === 'username') {
+    user = await User.findOne({username: input});
   } else {
     throw new Error;
   }

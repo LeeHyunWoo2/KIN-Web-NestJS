@@ -4,7 +4,7 @@ import {NoteTypes} from "@/types/Note";
 export const getNotes = async (
     userId: string
     ): Promise<NoteTypes[]> =>
-    Note.find({ user_id: userId }).sort({ created_at: -1 }).lean<NoteTypes[]>();
+    Note.find({ user_id: userId }).sort({ created_at: -1 });
 
 export const createNote = async (
     userId: string,

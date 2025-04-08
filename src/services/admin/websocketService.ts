@@ -83,4 +83,4 @@ export const attachToServer = (server: Server): void => {
   });
 };
 
-module.exports = { wss };
+export { wss };

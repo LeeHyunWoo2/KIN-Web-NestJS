@@ -1,22 +1,22 @@
 export interface VisitorTypes {
   visitorId: string;
+  visitCount: number;
+  lastVisit: Date;
   ipHistory: {
     ip: string;
     changedAt: Date;
   }[];
+  device?: string;
   country: string;
+  browser?: string;
   userAgent?: string;
-  referrer?: string;
-  path?: string;
   tracking: {
     path: string;
     stay: number;
     visitedAt: Date;
   }[];
-  device?: string;
-  browser?: string;
-  visitCount: number;
-  lastVisit: Date;
+  path?: string;
+  referrer?: string;
   createdAt: Date;
 }
 

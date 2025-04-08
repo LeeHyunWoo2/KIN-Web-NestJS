@@ -31,7 +31,7 @@ export const sendVerificationEmail = async (email : string): Promise<void> => {
 };
 
 export const verifyEmailToken = async (token: string): Promise<string> => {
-  const {decoded} = verifyEmailVerificationToken(token) as EmailTokenPayload;
+  const decoded = verifyEmailVerificationToken(token) as EmailTokenPayload;
 
   if (!decoded) {
     throw createHttpError(400, '유효하지 않은 인증입니다.');

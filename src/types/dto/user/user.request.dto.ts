@@ -2,5 +2,5 @@
 import {FindUserQuery} from "@/types/User";
 
 export interface FindUserDataRequestDto extends FindUserQuery{
-  fetchUserId: boolean;
+  fetchUsername: boolean;
 }

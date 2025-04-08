@@ -7,6 +7,7 @@ import {
 } from '@/controllers/auth/socialController';
 import {injectAuthenticatedUser} from '@/middleware/auth/injectAuthenticatedUser';
 import {Provider, getPassportOptions} from "@/utils/getPassportOptions";
+import { UserTypes } from "@/types/User";
 
 const socialRouter: Router = Router();
 
@@ -27,13 +28,15 @@ socialRouter.get('/:provider', (req, res, next) => {
 });
 
 // 소셜 로그인 콜백
-socialRouter.get('/callback/:provider', (req, res) => {
+socialRouter.get('/:provider/callback', (req, res, next) => {
   const provider = req.params.provider as Provider;
   try {
     const { strategy, options } = getPassportOptions(provider, 'login-callback');
-    passport.authenticate(strategy, options)(req, res, async () => {
-      await handleSocialCallback(req, res);
-    });
+
+    passport.authenticate(strategy, options, (error: unknown, user: UserTypes) => {
+      req.authResult = { error, user };
+      next();
+    })(req, res, next);
   } catch (error) {
     if (error instanceof Error){
       res.status(400).json({ error: error.message });
@@ -41,7 +44,7 @@ socialRouter.get('/callback/:provider', (req, res) => {
       res.status(400)
     }
   }
-});
+}, handleSocialCallback);
 
 // 일반 계정에 소셜 계정 추가 연동
 socialRouter.get('/link/:provider', injectAuthenticatedUser, (req, res, next) => {
@@ -59,21 +62,23 @@ socialRouter.get('/link/:provider', injectAuthenticatedUser, (req, res, next) =>
 });
 
 // 추가 연동 콜백
-socialRouter.get('/link/callback/:provider', injectAuthenticatedUser, (req, res) => {
+socialRouter.get('/link/:provider/callback', injectAuthenticatedUser, (req, res, next) => {
   const provider = req.params.provider as Provider;
   try {
     const { strategy, options } = getPassportOptions(provider, 'link-callback');
-    passport.authenticate(strategy, options)(req, res, () => {
-      handleSocialLinkCallback(req, res);
-    });
+
+    passport.authenticate(strategy, options, (error: unknown, user: UserTypes) => {
+      req.authResult = { error, user };
+      next();
+    })(req, res, next);
   } catch (error) {
-    if (error instanceof Error){
+    if (error instanceof Error) {
       res.status(400).json({ error: error.message });
     } else {
-      res.status(400)
+      res.status(400).end();
     }
   }
-});
+}, handleSocialLinkCallback);
 
 // 소셜 계정 연동 해제
 socialRouter.delete('/:provider', injectAuthenticatedUser, unlinkSocialAccount);

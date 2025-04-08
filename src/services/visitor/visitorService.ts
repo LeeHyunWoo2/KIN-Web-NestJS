@@ -3,7 +3,7 @@ import {VisitorInfoInput, VisitorTrackInput, VisitorTypes} from "@/types/Visitor
 
 export const getVisitorList = async (): Promise<VisitorTypes[]> => Visitor.find()
   .sort({ lastVisit: -1 })
-  .select("-__v")
+  .select("visitorId visitCount lastVisit ipHistory device country browser userAgent tracking path")
   .lean<VisitorTypes[]>();
 
 export const recordVisitorInfo = async ({

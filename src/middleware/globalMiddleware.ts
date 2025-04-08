@@ -15,12 +15,12 @@ const originWhitelist = [
 ];
 
 export const globalMiddleware = (app : Application) : void => {
+  app.use(setRealIp);
   app.use(logger);
   app.use(compression());
   app.use(express.json());
   app.use(cookieParser());
   app.use(bodyParser.json());
-  app.use(setRealIp);
 
   app.use(
       cors({
