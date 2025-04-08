@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/KIN-Web-Nest.iml" filepath="$PROJECT_DIR$/.idea/KIN-Web-Nest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/kin-web-nest.iml" filepath="$PROJECT_DIR$/.idea/kin-web-nest.iml" />
     </modules>
   </component>
 </project>
