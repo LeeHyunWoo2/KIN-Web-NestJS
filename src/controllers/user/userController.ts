@@ -16,6 +16,7 @@ import {sendFormattedError} from "@/utils/sendFormattedError";
 import {CustomError} from "@/types/CustomError";
 import {PublicUserDataResponseDto, UserInfoResponseDto} from "@/types/dto/user/user.response.dto";
 import {FindUserQuery, FindUserQueryData, UpdateUserProfileData} from "@/types/User";
+import {logError} from "@/utils/logError";
 
 export const getUserPublicProfileController = async (
     req: Request,
@@ -25,6 +26,7 @@ export const getUserPublicProfileController = async (
     const publicProfile = await getUserPublicProfile(req.user?.id as string);
     res.status(200).json(publicProfile);
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "프로필 조회 실패");
   }
 };
@@ -37,6 +39,7 @@ export const getUserInfoController = async (
     const user = await getUserById(req.user?.id as string);
     res.status(200).json({ user });
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "사용자 정보 조회 중 오류가 발생했습니다.");
   }
 };
@@ -86,6 +89,7 @@ export const updateUserInfoController = async (
     const updatedUser = await updateUser(userId, { name, profileIcon });
     res.status(200).json({user: updatedUser});
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "사용자 정보 수정 중 오류가 발생했습니다.");
   }
 };
@@ -100,6 +104,7 @@ export const resetPasswordController = async (
     await resetPassword(newPassword, email);
     res.status(200).json({ message: "비밀번호가 성공적으로 변경되었습니다." });
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "비밀번호 변경 중 오류가 발생했습니다.");
   }
 };
@@ -114,6 +119,7 @@ export const addLocalAccountController = async (
     await addLocalAccount(req.user?.id as string, username, email, password);
     res.status(200).json();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "로컬 계정 추가 중 오류가 발생했습니다.");
   }
 };
@@ -145,6 +151,7 @@ export const deleteUserController = async (
 
     res.status(200).json();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "회원 탈퇴 중 오류가 발생했습니다.");
   }
 };

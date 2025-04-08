@@ -6,6 +6,7 @@ import {Request, Response} from 'express';
 import {sendFormattedError} from "@/utils/sendFormattedError";
 import {CustomError} from "@/types/CustomError";
 import {EmailTokenRequestDto} from "@/types/dto/auth/auth.request.dto";
+import {logError} from "@/utils/logError";
 
 export const verifyEmailController = async (req: Request, res: Response): Promise<void> => {
   const { token } = req.query;
@@ -13,6 +14,7 @@ export const verifyEmailController = async (req: Request, res: Response): Promis
     const email = await verifyEmailToken(token as string);
     res.status(200).send({ message: '이메일 인증이 완료되었습니다.', email });
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, '이메일 인증 처리 중 서버 오류가 발생했습니다.');
   }
 };
@@ -26,6 +28,7 @@ export const sendVerificationEmailController = async (
     await sendVerificationEmail(email);
     res.status(200).send({message: '이메일 인증 링크가 전송되었습니다.'});
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "이메일 전송 실패")
   }
 };

@@ -73,6 +73,7 @@ export const configureLinkingStrategies = (passport : PassportStatic) => {
       }
       return done(new Error);
     } catch (error) {
+      console.error(error)
       return done(error, false);
     }
   }));
@@ -105,6 +106,7 @@ export const configureLinkingStrategies = (passport : PassportStatic) => {
       }
       return done(new Error);
     } catch (error) {
+      console.error(error)
       return done(error, false);
     }
   }));

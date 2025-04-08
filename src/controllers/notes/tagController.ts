@@ -9,6 +9,7 @@ import {CreateAndUpdateTagRequestDto, DeleteTagRequestDto} from "@/types/dto/tag
 import {TagResponseDto} from "@/types/dto/tag/tag.response.dto";
 import {sendFormattedError} from "@/utils/sendFormattedError";
 import {CustomError} from "@/types/CustomError";
+import {logError} from "@/utils/logError";
 
 export const createTagController = async (
     req: Request<{}, {}, CreateAndUpdateTagRequestDto>,
@@ -20,6 +21,7 @@ export const createTagController = async (
     const tag = await createTag(req.user?.id as string, name);
     res.status(201).json(tag);
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "태그 생성 중 오류가 발생했습니다.");
   }
 };
@@ -32,6 +34,7 @@ export const getTagsController = async (
     const tags = await getTags(req.user?.id as string);
     res.status(200).json(tags);
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "태그 조회 중 오류가 발생했습니다.");
   }
 };
@@ -48,6 +51,7 @@ export const updateTagController = async (
 
     res.status(200).json(updatedTag);
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "태그 수정 중 오류가 발생했습니다.");
   }
 };
@@ -64,6 +68,7 @@ export const deleteTagController = async (
 
     res.status(200).json(deletedTag);
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "태그 삭제 중 오류가 발생했습니다.");
   }
 };

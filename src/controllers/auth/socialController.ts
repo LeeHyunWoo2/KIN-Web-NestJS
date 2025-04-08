@@ -4,6 +4,7 @@ import setCookie from '@/utils/setCookie';
 import {unlinkAccount} from '@/services/user/socialService';
 import {sendFormattedError} from "@/utils/sendFormattedError";
 import {CustomError} from "@/types/CustomError";
+import {logError} from "@/utils/logError";
 
 const accessTokenMaxAge = 60 * 60 * 1000; // 1시간
 
@@ -40,7 +41,8 @@ export const handleSocialCallback = async (req:Request, res:Response): Promise<v
     });
 
     res.redirect(`${process.env.FRONTEND_ORIGIN}/loginSuccess`);
-  } catch {
+  } catch (error) {
+    logError(error, req);
     res.redirect(`${process.env.FRONTEND_ORIGIN}/login`);
   }
 };
@@ -62,6 +64,7 @@ export const unlinkSocialAccount = async (req:Request, res:Response): Promise<vo
     await unlinkAccount(req.user?.id as string, provider);
     res.status(200).json();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "소셜 계정 연동 해제 중 오류가 발생했습니다.")
   }
 };

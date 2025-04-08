@@ -18,6 +18,7 @@ import {
   LoginResponseDto,
 } from '@/types/dto/auth/auth.response.dto'
 import {RefreshTokenPayload, UserTypes} from "@/types/User";
+import {logError} from "@/utils/logError";
 
 
 const accessTokenMaxAge = Number(process.env.JWT_EXPIRATION) * 1000;
@@ -38,6 +39,7 @@ export const registerController = async (
 
     res.status(201).json();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "회원가입 중 오류가 발생했습니다.")
   }
 };
@@ -60,6 +62,7 @@ export const loginController = async (
 
     res.status(200).json({success: true});
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "로그인 중 오류가 발생했습니다.")
   }
 };
@@ -90,7 +93,8 @@ export const logoutController = async (
     });
 
     res.status(200).json();
-  } catch (error: unknown) {
+  } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "로그아웃 중 오류가 발생했습니다.")
   }
 };
@@ -111,6 +115,7 @@ export const renewTokenController = async (
 
     res.status(200).json();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "토큰 갱신 중 오류가 발생했습니다.")
   }
 };

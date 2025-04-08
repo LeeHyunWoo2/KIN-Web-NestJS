@@ -5,6 +5,7 @@ import { getCategories } from "@/services/notes/categoryService";
 import { getTags } from "@/services/notes/tagService";
 import {sendFormattedError} from "@/utils/sendFormattedError";
 import {CustomError} from "@/types/CustomError";
+import {logError} from "@/utils/logError";
 
 export const updateUserActivityTimeController = async (
     req : Request<{}, {}, {currentTime: number}>,
@@ -16,6 +17,7 @@ export const updateUserActivityTimeController = async (
     await updateUserActivityTime(req.user?.id as string, activityTime);
     res.status(200).json();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "유저 활동 시간 갱신 중 오류가 발생했습니다.");
   }
 };
@@ -28,6 +30,7 @@ export const getLastActivityController = async (
     const lastActivity = await getUserLastActivity(req.user?.id as string);
     res.json({ lastActivity });
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "유저 마지막 활동 시간 조회 중 오류가 발생했습니다.");
   }
 };
@@ -52,6 +55,7 @@ export const syncAllController = async (
       tags,
     });
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "데이터를 가져오는 중 오류가 발생했습니다.");
   }
 };

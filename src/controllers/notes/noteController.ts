@@ -7,6 +7,7 @@ import {
 } from '@/services/notes/noteService';
 import {sendFormattedError} from "@/utils/sendFormattedError";
 import {CustomError} from "@/types/CustomError";
+import {logError} from "@/utils/logError";
 
 export const getNotesController = async (
     req: Request,
@@ -16,6 +17,7 @@ export const getNotesController = async (
     const notes = await getNotes(req.user?.id as string);
     res.status(200).json(notes);
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "노트를 불러오던 중 오류가 발생했습니다.");
   }
 };
@@ -30,6 +32,7 @@ export const createNoteController = async (
     const note = await createNote(req.user?.id as string, title, content, category, tags, mode);
     res.status(201).json(note);
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "노트 생성 중 오류가 발생했습니다.");
   }
 };
@@ -57,6 +60,7 @@ export const updateNotesController = async (
     );
     res.status(200).json(updatedNotes.filter(Boolean));
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "노트 수정 중 오류가 발생했습니다.");
   }
 };
@@ -77,6 +81,7 @@ export const deleteNotesController = async (
     );
     res.status(200).json(deletedNotes.filter(Boolean));
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "노트 삭제 중 오류가 발생했습니다.");
   }
 };

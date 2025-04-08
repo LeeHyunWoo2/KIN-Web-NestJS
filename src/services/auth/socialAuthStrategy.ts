@@ -51,6 +51,7 @@ export const configureSocialStrategies = (passport: PassportStatic): void => {
       });
       return done(null, newUser as AccessTokenPayload);
     } catch (error) {
+      console.error(error)
       return done(error, false);
     }
   }));
@@ -92,6 +93,7 @@ export const configureSocialStrategies = (passport: PassportStatic): void => {
       });
       return done(null, newUser as AccessTokenPayload);
     } catch (error) {
+      console.error(error)
       return done(error, false);
     }
   }));
@@ -133,6 +135,7 @@ export const configureSocialStrategies = (passport: PassportStatic): void => {
       });
       return done(null, newUser as AccessTokenPayload);
     } catch (error) {
+      console.error(error)
       return done(error, false);
     }
   }));

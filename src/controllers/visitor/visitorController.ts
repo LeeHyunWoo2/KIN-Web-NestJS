@@ -12,6 +12,7 @@ import {
 } from "@/types/dto/visitor/visitor.request.dto";
 import {VisitorInfoInput} from "@/types/Visitor";
 import {VisitorSummaryResponse} from "@/types/dto/visitor/visitor.response.dto";
+import {logError} from "@/utils/logError";
 
 const getHeaderString = (value: string | string[] | undefined, fallback = "unknown"): string =>
     Array.isArray(value) ? value[0] : value ?? fallback;
@@ -48,6 +49,7 @@ export const recordVisitorInfoController = async (
     await recordVisitorInfo(input);
     res.status(201).end();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "방문자 기록 저장 중 오류 발생", {skipToast: true});
   }
 };
@@ -66,6 +68,7 @@ export const trackVisitorActivityController = async (
     });
     res.status(200).end();
   } catch (error) {
+    logError(error, req);
     sendFormattedError(res, error as CustomError, "트래킹 데이터 저장 중 오류 발생", {skipToast: true});
   }
 };
