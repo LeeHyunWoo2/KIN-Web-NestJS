@@ -1,4 +1,3 @@
-// eslint.config.mjs
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
@@ -30,8 +29,15 @@ export default [
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
       '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
-      '@typescript-eslint/member-ordering': 'warn',
-
+      '@typescript-eslint/member-ordering': [
+        'warn',
+        {
+          default: {
+            memberTypes: ['field', 'constructor', 'method'],
+            order: 'as-written',
+          },
+        },
+      ],
       'import/order': 'off',
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
