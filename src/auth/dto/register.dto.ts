@@ -1,9 +1,9 @@
 import { IsBoolean, IsEmail, IsString } from 'class-validator';
 
-import { UserTypes } from '@/types/user.types';
+import { UserSnapshot } from '@/types/user.types';
 
 type RegisterFields = Pick<
-  UserTypes,
+  UserSnapshot,
   'username' | 'email' | 'password' | 'name' | 'marketingConsent'
 >;
 

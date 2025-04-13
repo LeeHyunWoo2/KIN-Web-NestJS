@@ -1,19 +1,17 @@
 import { JwtPayload } from 'jsonwebtoken';
-import mongoose from 'mongoose';
 
-// DB 모델 기준 전체 사용자 구조
-export interface UserTypes {
+export interface UserSnapshot {
   _id: string;
   username?: string;
   name: string;
   email: string;
   password?: string;
-  passwordHistory?: PasswordHistoryTypes[];
+  passwordHistory?: PasswordHistoryEntry[];
   termsAgreed?: boolean;
   marketingConsent?: boolean;
-  socialAccounts: SocialAccountTypes[];
+  socialAccounts: SocialAccount[];
   role: UserRole;
-  profileIcon?: string;
+  profileIcon: string;
   deleteQueue?: {
     url: string;
     queuedAt: Date;
@@ -23,13 +21,12 @@ export interface UserTypes {
   lastActivity?: Date;
 }
 
-export interface PasswordHistoryTypes {
+export interface PasswordHistoryEntry {
   password: string;
   changedAt: Date;
 }
 
-// 소셜 계정 정보 구조
-export interface SocialAccountTypes {
+export interface SocialAccount {
   provider: 'google' | 'kakao' | 'naver' | 'local';
   providerId: string;
   socialRefreshToken?: string;
@@ -37,7 +34,6 @@ export interface SocialAccountTypes {
 
 export type UserRole = 'user' | 'admin';
 
-// JWT에 담길 최소 사용자 정보
 export interface AccessTokenPayload {
   id: string;
   email: string;
@@ -51,7 +47,7 @@ export interface RefreshTokenPayload {
 }
 
 export interface GenerateOAuthToken {
-  user: UserTypes;
+  user: UserSnapshot;
   provider: 'google' | 'kakao' | 'naver';
 }
 
@@ -59,23 +55,17 @@ export interface EmailTokenPayload extends JwtPayload {
   email: string;
 }
 
-// verifyAccessToken 이후 req.user로 들어오는 타입
 export type DecodedUser = AccessTokenPayload;
 
-// JWT 발급 시 리턴할 토큰 구조
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
   refreshTokenTtl: number;
 }
 
-export interface PublicUserProfile {
-  name: string;
-  email: string;
-  profileIcon: string;
+export type PublicUserProfile = Pick<UserSnapshot, 'name' | 'email' | 'profileIcon' | 'role'> & {
   userId: string;
-  role: UserRole;
-}
+};
 
 export interface CreateUserInput {
   username: string;
@@ -91,17 +81,17 @@ export interface LoginUserInput {
   rememberMe: boolean;
 }
 
-export interface GenerateTokenInput {
-  _id: string;
-  email: string;
-  role: UserRole;
+export type SafeUserInfo = Omit<
+  UserSnapshot,
+  '_id' | 'password' | 'passwordHistory' | 'deleteQueue'
+>;
+
+export type FindUserQueryData = Pick<UserSnapshot, 'username' | 'email' | 'socialAccounts'>;
+
+export interface UpdateUserProfileData {
+  name?: string;
+  profileIcon?: string;
 }
-
-export type SafeUserInfo = Omit<UserTypes, '_id' | 'password' | 'passwordHistory' | 'deleteQueue'>;
-
-export type FindUserQueryData = Pick<UserTypes, 'username' | 'email' | 'socialAccounts'>;
-
-export type UpdateUserProfileData = Pick<UserTypes, 'name' | 'profileIcon'>;
 
 export interface FindUserQuery {
   input: string;

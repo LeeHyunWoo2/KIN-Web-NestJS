@@ -68,6 +68,7 @@ export class AuthController {
   ): Promise<{ success: boolean }> {
     const tokens = await this.authService.loginUser(loginDto as LoginUserInput);
 
+    // TODO: as unknown as 제거하기
     setAuthCookies(reply, tokens as unknown as TokenPair);
     return { success: true };
   }

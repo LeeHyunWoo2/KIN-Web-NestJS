@@ -214,6 +214,7 @@ export class TokenService {
   }
 
   async invalidateAccessToken(accessToken: string): Promise<void> {
+    // TODO: as unknown as 제거하기
     const decoded = (await this.verifyAccessToken(accessToken)) as unknown as {
       exp: number;
     } | null;

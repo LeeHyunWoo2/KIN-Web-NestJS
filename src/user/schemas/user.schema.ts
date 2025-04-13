@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-import { PasswordHistoryTypes, SocialAccountTypes, UserRole } from '@/types/user.types';
+import { PasswordHistoryEntry, SocialAccount, UserRole } from '@/types/user.types';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -20,7 +20,7 @@ export class User {
   password?: string;
 
   @Prop({ type: [{ password: String, changedAt: Date }], default: [] })
-  passwordHistory?: PasswordHistoryTypes[];
+  passwordHistory?: PasswordHistoryEntry[];
 
   @Prop({ required: false })
   termsAgreed?: boolean;
@@ -29,7 +29,7 @@ export class User {
   marketingConsent?: boolean;
 
   @Prop({ type: [{ provider: String, providerId: String, socialRefreshToken: String }] })
-  socialAccounts: SocialAccountTypes[];
+  socialAccounts: SocialAccount[];
 
   @Prop({ enum: ['user', 'admin'], default: 'user' })
   role: UserRole;
@@ -38,7 +38,7 @@ export class User {
     default:
       'https://static.vecteezy.com/system/resources/thumbnails/002/318/271/small/user-profile-icon-free-vector.jpg',
   })
-  profileIcon?: string;
+  profileIcon: string;
 
   @Prop({
     type: [{ url: String, queuedAt: { type: Date, default: Date.now, immutable: true } }],
