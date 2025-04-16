@@ -46,8 +46,12 @@ export interface RefreshTokenPayload {
   ttl: number;
 }
 
+export interface SocialTokenUser {
+  socialAccounts: SocialAccount[];
+}
+
 export interface GenerateOAuthToken {
-  user: UserSnapshot;
+  user: SocialTokenUser;
   provider: 'google' | 'kakao' | 'naver';
 }
 
@@ -81,12 +85,18 @@ export interface LoginUserInput {
   rememberMe: boolean;
 }
 
-export type SafeUserInfo = Omit<
+export type SafeUserInfo = Pick<
   UserSnapshot,
-  '_id' | 'password' | 'passwordHistory' | 'deleteQueue'
+  'name' | 'email' | 'username' | 'profileIcon' | 'role' | 'createdAt'
 >;
 
-export type FindUserQueryData = Pick<UserSnapshot, 'username' | 'email' | 'socialAccounts'>;
+export interface FindUserQueryData {
+  username?: string;
+  email?: string;
+  socialAccounts?: SocialAccount[];
+  signal: 'user_found' | 'user_not_found';
+  accountType?: 'Local' | 'SNS';
+}
 
 export interface UpdateUserProfileData {
   name?: string;
@@ -97,3 +107,9 @@ export interface FindUserQuery {
   input: string;
   inputType: string;
 }
+
+export type PassportAuthResultError =
+  | Error
+  | { code?: number; message?: string }
+  | string
+  | undefined;

@@ -2,15 +2,12 @@ import { Body, Controller, Delete, Get, Post, Put, Req, Res, UseGuards } from '@
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
-import { AuthGuard } from '@/auth/auth.guard';
+import { AccessGuard } from '@/auth/access.guard';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { DecodedUser } from '@/types/user.types';
+import { FindUserResultDto } from '@/user/dto/find-result-response';
 import { FindUserDto } from '@/user/dto/find-user.dto';
-import {
-  FindUserFailureResponseDto,
-  FindUserSuccessResponseDto,
-} from '@/user/dto/find-user-response';
 import { PublicUserProfileDto } from '@/user/dto/public-user-profile.dto';
 import { ResetPasswordDto } from '@/user/dto/reset-password.dto';
 import { UpdateUserDto } from '@/user/dto/update-user.dto';
@@ -23,7 +20,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  @UseGuards(AuthGuard)
+  @UseGuards(AccessGuard)
   @CatchAndLog()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'public 유저 데이터 (프로필 표시용)' })
@@ -35,17 +32,17 @@ export class UserController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AccessGuard)
   @CatchAndLog()
   @ApiBearerAuth()
   @ApiOperation({ summary: '로그인된 유저의 전체 정보 조회' })
   @ApiResponse({ status: 200, type: UserInfoResponseDto })
-  async getUserInfo(@CurrentUserDecorator() user: DecodedUser) {
+  async getUserInfo(@CurrentUserDecorator() user: DecodedUser): Promise<UserInfoResponseDto> {
     return this.userService.getUserInfo(user.id);
   }
 
   @Put()
-  @UseGuards(AuthGuard)
+  @UseGuards(AccessGuard)
   @CatchAndLog()
   @ApiBearerAuth()
   @ApiOperation({ summary: '유저 정보 수정 (이름, 프로필 아이콘)' })
@@ -66,20 +63,17 @@ export class UserController {
   @Post('find')
   @CatchAndLog()
   @ApiOperation({ summary: '아이디 / 비밀번호 찾기 또는 중복 확인' })
-  @ApiResponse({ status: 200, type: FindUserSuccessResponseDto, description: '유저를 찾은 경우' })
   @ApiResponse({
     status: 200,
-    type: FindUserFailureResponseDto,
-    description: '유저를 찾지 못한 경우',
+    type: FindUserResultDto,
+    description: '유저 존재 여부 및 관련 정보 반환',
   })
-  async findUserByInput(
-    @Body() body: FindUserDto,
-  ): Promise<FindUserSuccessResponseDto | FindUserFailureResponseDto> {
-    return this.userService.findUserByInput(body);
+  async findUserByInput(@Body() dto: FindUserDto): Promise<FindUserResultDto> {
+    return this.userService.findUserByInput(dto);
   }
 
   @Post('change-local')
-  @UseGuards(AuthGuard)
+  @UseGuards(AccessGuard)
   @CatchAndLog()
   async addLocalAccount(
     @CurrentUserDecorator() user: DecodedUser,
@@ -89,13 +83,13 @@ export class UserController {
   }
 
   @Delete()
-  @UseGuards(AuthGuard)
+  @UseGuards(AccessGuard)
   @CatchAndLog()
   async deleteUser(
     @CurrentUserDecorator() user: DecodedUser,
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ) {
+  ): Promise<void> {
     const { accessToken, refreshToken } = req.cookies;
     await this.userService.deleteUser(user.id, accessToken, refreshToken);
     reply.clearCookie('accessToken');

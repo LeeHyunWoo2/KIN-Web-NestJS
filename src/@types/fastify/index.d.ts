@@ -1,6 +1,6 @@
 import 'fastify';
 
-import { DecodedUser } from '@/types/user.types';
+import { AccessTokenPayload, DecodedUser, PassportAuthResultError } from '@/types/user.types';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -9,5 +9,9 @@ declare module 'fastify' {
       refreshToken?: string;
     };
     user?: DecodedUser;
+    authResult?: {
+      user?: AccessTokenPayload;
+      error?: PassportAuthResultError;
+    };
   }
 }

@@ -1,11 +1,11 @@
 import { IsEmail, IsOptional, IsString } from 'class-validator';
 
-export class FindUserSuccessResponseDto {
+export class FindUserResultDto {
   @IsString()
-  signal: 'user_found';
+  signal: 'user_found' | 'user_not_found';
 
   @IsString()
-  accountType: 'Local' | 'SNS';
+  accountType?: 'Local' | 'SNS';
 
   @IsOptional()
   @IsString()
@@ -14,9 +14,4 @@ export class FindUserSuccessResponseDto {
   @IsOptional()
   @IsEmail()
   email?: string;
-}
-
-export class FindUserFailureResponseDto {
-  @IsString()
-  signal: 'user_not_found';
 }

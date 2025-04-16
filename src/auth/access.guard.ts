@@ -4,7 +4,7 @@ import { FastifyRequest } from 'fastify';
 import { TokenService } from '@/auth/services/token.service';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class AccessGuard implements CanActivate {
   constructor(private readonly tokenService: TokenService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

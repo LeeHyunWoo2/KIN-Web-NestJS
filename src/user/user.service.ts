@@ -9,6 +9,7 @@ import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 import {
+  AccessTokenPayload,
   FindUserQuery,
   FindUserQueryData,
   PublicUserProfile,
@@ -59,18 +60,45 @@ export class UserService {
 
   @CatchAndLog()
   async findUserByInput(
-    query: FindUserQuery,
-  ): Promise<{ signal: 'user_found'; user: FindUserQueryData } | { signal: 'user_not_found' }> {
-    const { input, inputType } = query;
-    const user = await this.userModel.findOne({ [inputType]: input });
+    query: FindUserQuery & { fetchUsername: boolean },
+  ): Promise<FindUserQueryData> {
+    const { input, inputType, fetchUsername } = query;
+
+    const user = await this.userModel
+      .findOne({ [inputType]: input })
+      .select(fetchUsername ? 'username' : 'email' + 'socialAccounts');
 
     if (!user) {
       return { signal: 'user_not_found' };
     }
 
+    const hasLocalAccount = user.socialAccounts.some((account) => account.provider === 'local');
+    const accountType: 'Local' | 'SNS' = hasLocalAccount ? 'Local' : 'SNS';
+
     return {
       signal: 'user_found',
-      user: user.toObject() as FindUserQueryData,
+      accountType,
+      ...(fetchUsername ? { username: user.username } : { email: user.email }),
+    };
+  }
+
+  @CatchAndLog()
+  async findUserBySocialAccount(
+    provider: 'google' | 'kakao' | 'naver',
+    providerId: string,
+  ): Promise<AccessTokenPayload | null> {
+    const user = await this.userModel.findOne({
+      socialAccounts: {
+        $elemMatch: { provider, providerId },
+      },
+    });
+
+    if (!user) return null;
+
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
     };
   }
 
@@ -158,6 +186,37 @@ export class UserService {
     });
 
     await user.save();
+  }
+
+  async createSocialUser(input: {
+    provider: 'google' | 'kakao' | 'naver';
+    providerId: string;
+    email?: string;
+    name: string;
+    profileIcon?: string;
+    socialRefreshToken?: string;
+  }): Promise<AccessTokenPayload> {
+    const user = new this.userModel({
+      email: input.email,
+      name: input.name,
+      profileIcon: input.profileIcon,
+      termsAgreed: true,
+      socialAccounts: [
+        {
+          provider: input.provider,
+          providerId: input.providerId,
+          socialRefreshToken: input.socialRefreshToken,
+        },
+      ],
+    });
+
+    await user.save();
+
+    return {
+      id: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    };
   }
 
   async deleteUser(userId: string, accessToken?: string, refreshToken?: string): Promise<void> {

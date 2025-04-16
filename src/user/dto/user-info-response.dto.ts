@@ -2,7 +2,7 @@ import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 import { UserRole } from '@/types/user.types';
 
-export class UserInfoDto {
+export class UserInfoResponseDto {
   @IsString()
   name: string;
 
@@ -21,11 +21,4 @@ export class UserInfoDto {
 
   @IsOptional()
   createdAt?: Date;
-
-  @IsOptional()
-  updatedAt?: Date;
-}
-
-export class UserInfoResponseDto {
-  user: UserInfoDto;
 }

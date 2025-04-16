@@ -30,37 +30,6 @@ export class TokenService {
     this.accessTokenSecret = config.getOrThrow<string>('auth.accessTokenSecret');
   }
 
-  /*  @CatchAndLog()
-  @LogExecutionTime()
-  async generateTokens(
-    user: GenerateTokenInput,
-    rememberMe = false,
-    existingTtl: number | null = null,
-  ): Promise<TokenPair> {
-    const accessToken = await this.jwtService.signAsync(
-      { id: user._id, email: user.email, role: user.role },
-      { expiresIn: this.config.get<number>('auth.jwtExpiration') },
-    );
-
-    const refreshTokenTtl =
-      existingTtl ??
-      (rememberMe
-        ? this.config.getOrThrow<number>('auth.rememberRefreshTokenTtl')
-        : this.config.getOrThrow<number>('auth.refreshTokenTtl'));
-
-    const refreshToken = await this.jwtService.signAsync(
-      { id: user._id },
-      {
-        secret: this.config.get<string>('auth.refreshTokenSecret'),
-        expiresIn: refreshTokenTtl,
-      },
-    );
-
-    await this.saveRefreshTokenToRedis(user._id, refreshToken, refreshTokenTtl, rememberMe);
-
-    return { accessToken, refreshToken, refreshTokenTtl };
-  }*/
-
   @CatchAndLog()
   @LogExecutionTime()
   async generateTokens(payload: AccessTokenPayload, refreshTtl: number): Promise<TokenPair> {
@@ -101,44 +70,6 @@ export class TokenService {
       throw new UnauthorizedException('Access token is invalid');
     }
   }
-
-  /*  @CatchAndLog()
-  @LogExecutionTime()
-  async verifyRefreshToken(refreshToken: string): Promise<RefreshTokenPayload> {
-    try {
-      const decoded = await this.jwtService.verifyAsync<{ id: string }>(refreshToken, {
-        secret: this.config.get<string>('auth.refreshTokenSecret'),
-        algorithms: ['HS256'],
-      });
-      const userId = decoded.id;
-      const stored = await this.redisClient.get(`refreshToken:${userId}`);
-      if (!stored) throw new UnauthorizedException('Refresh token not found');
-
-      const storedToken = JSON.parse(stored) as { token: string; rememberMe: boolean };
-
-      if (storedToken.token !== refreshToken)
-        throw new UnauthorizedException('Refresh token mismatch');
-
-      let ttl: number | undefined = await this.redisClient.ttl(`refreshToken:${userId}`);
-      if (ttl < 0) throw new UnauthorizedException('Refresh token expired');
-
-      const threshold = storedToken.rememberMe
-        ? this.config.getOrThrow<number>('auth.rememberRefreshTokenRenewThreshold')
-        : this.config.getOrThrow<number>('auth.refreshTokenRenewThreshold');
-
-      const refreshTokenTtl = storedToken.rememberMe
-        ? this.config.getOrThrow<number>('auth.rememberRefreshTokenTtl')
-        : this.config.getOrThrow<number>('auth.refreshTokenTtl');
-
-      if (ttl < threshold) {
-        ttl = refreshTokenTtl;
-      }
-
-      return { id: userId, rememberMe: storedToken.rememberMe, ttl };
-    } catch {
-      throw new UnauthorizedException('Refresh token is invalid or expired');
-    }
-  }*/
 
   @CatchAndLog()
   @LogExecutionTime()

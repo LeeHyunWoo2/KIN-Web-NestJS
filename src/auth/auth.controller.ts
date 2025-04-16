@@ -13,7 +13,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken';
 
-import { AuthGuard } from '@/auth/auth.guard';
+import { AccessGuard } from '@/auth/access.guard';
 import { AuthService } from '@/auth/auth.service';
 import { LoginDto } from '@/auth/dto/login.dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
@@ -119,7 +119,7 @@ export class AuthController {
   }
 
   @Get('session')
-  @UseGuards(AuthGuard)
+  @UseGuards(AccessGuard)
   @ApiOperation({ summary: 'AccessToken 기반 세션 확인' })
   @ApiResponse({
     status: 200,

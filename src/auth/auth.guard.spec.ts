@@ -1,9 +1,9 @@
 import { TokenService } from '@/auth/services/token.service';
 
-import { AuthGuard } from './auth.guard';
+import { AccessGuard } from './access.guard';
 
-describe('AuthGuard', () => {
+describe('AccessGuard', () => {
   it('should be defined', () => {
-    expect(new AuthGuard({} as TokenService)).toBeDefined();
+    expect(new AccessGuard({} as TokenService)).toBeDefined();
   });
 });
