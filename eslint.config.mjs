@@ -28,6 +28,8 @@ export default [
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
       '@typescript-eslint/no-unnecessary-type-assertion': 'warn',
+      '@typescript-eslint/no-inferrable-types': 'warn',
+      '@typescript-eslint/no-redundant-type-constituents': 'warn',
       '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
       '@typescript-eslint/member-ordering': [
         'warn',

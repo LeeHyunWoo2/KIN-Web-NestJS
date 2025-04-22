@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 
-import { TokenService } from '@/auth/services/token.service';
+import { TokenService } from '@/auth/services/token/token.service';
 
 @Injectable()
 export class AccessGuard implements CanActivate {
@@ -16,8 +16,7 @@ export class AccessGuard implements CanActivate {
     }
 
     try {
-      const decoded = await this.tokenService.verifyAccessToken(token);
-      request.user = decoded;
+      request.user = await this.tokenService.verifyAccessToken(token);
       return true;
     } catch (error) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

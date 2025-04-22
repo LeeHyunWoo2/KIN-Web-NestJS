@@ -1,15 +1,17 @@
-import {
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Redis } from 'ioredis';
 
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
+import { InvalidEmailTokenException } from '@/common/exceptions/auth.exceptions';
+import {
+  RefreshTokenInvalidException,
+  RefreshTokenMismatchException,
+  RefreshTokenNotFoundException,
+  SaveRefreshTokenException,
+} from '@/common/exceptions/token.exceptions';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 import {
   AccessTokenPayload,
@@ -62,7 +64,7 @@ export class TokenService {
     }
 
     try {
-      return await this.jwtService.verifyAsync<AccessTokenPayload>(accessToken, {
+      return await this.jwtService.verifyAsync(accessToken, {
         secret: this.accessTokenSecret,
         algorithms: ['HS256'],
       });
@@ -81,14 +83,14 @@ export class TokenService {
       });
 
       const stored = await this.redisClient.get(`refreshToken:${decoded.id}`);
-      if (!stored) throw new UnauthorizedException('Refresh token not found');
+      if (!stored) throw new RefreshTokenNotFoundException();
 
       const parsed = JSON.parse(stored) as { token: string; rememberMe: boolean };
-      if (parsed.token !== refreshToken) throw new UnauthorizedException('Refresh token mismatch');
+      if (parsed.token !== refreshToken) throw new RefreshTokenMismatchException();
 
       return { id: decoded.id, rememberMe: parsed.rememberMe };
     } catch {
-      throw new UnauthorizedException('Refresh token is invalid or expired');
+      throw new RefreshTokenInvalidException();
     }
   }
 
@@ -98,7 +100,7 @@ export class TokenService {
     const ttl = await this.redisClient.ttl(key);
     // -2: key 없음, -1: ttl 없음
     if (ttl < 0) {
-      throw new UnauthorizedException('Refresh token is invalid or expired');
+      throw new RefreshTokenInvalidException();
     }
     return ttl;
   }
@@ -145,12 +147,9 @@ export class TokenService {
   }
 
   async invalidateAccessToken(accessToken: string): Promise<void> {
-    // TODO: as unknown as 제거하기
-    const decoded = (await this.verifyAccessToken(accessToken)) as unknown as {
-      exp: number;
-    } | null;
+    const decoded = await this.verifyAccessToken(accessToken);
     if (!decoded) return;
-    const ttl = Math.floor((decoded.exp - Date.now()) / 1000);
+    const ttl = decoded.exp ? Math.floor((decoded.exp - Date.now()) / 1000) : 0;
     if (ttl > 0) await this.redisClient.set(`blacklist:${accessToken}`, 'true', 'EX', ttl);
   }
 
@@ -170,7 +169,7 @@ export class TokenService {
         ttl,
       );
     } catch {
-      throw new InternalServerErrorException('failed to save refresh token to redis');
+      throw new SaveRefreshTokenException();
     }
   }
 
@@ -185,11 +184,11 @@ export class TokenService {
     return this.jwtService.sign({ email }, { expiresIn: '10m', secret: this.accessTokenSecret });
   }
 
-  verifyEmailVerificationToken(token: string): EmailTokenPayload | null {
+  async verifyEmailVerificationToken(token: string): Promise<EmailTokenPayload> {
     try {
-      return this.jwtService.verify<EmailTokenPayload>(token, { secret: this.accessTokenSecret });
+      return this.jwtService.verify(token, { secret: this.accessTokenSecret });
     } catch {
-      return null;
+      throw new InvalidEmailTokenException();
     }
   }
 }

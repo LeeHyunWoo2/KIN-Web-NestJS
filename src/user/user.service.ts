@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 import { Redis } from 'ioredis';
 import { Model } from 'mongoose';
 
-import { TokenService } from '@/auth/services/token.service';
+import { TokenService } from '@/auth/services/token/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';

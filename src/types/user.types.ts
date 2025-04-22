@@ -34,13 +34,13 @@ export interface SocialAccount {
 
 export type UserRole = 'user' | 'admin';
 
-export interface AccessTokenPayload {
+export interface AccessTokenPayload extends JwtPayload {
   id: string;
   email: string;
   role: UserRole;
 }
 
-export interface RefreshTokenPayload {
+export interface RefreshTokenPayload extends JwtPayload {
   id: string;
   rememberMe: boolean;
   ttl: number;

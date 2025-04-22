@@ -4,8 +4,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
-import { SocialService } from '@/auth/services/social.service';
-import { TokenService } from '@/auth/services/token.service';
+import { SocialService } from '@/auth/services/social/social.service';
+import { TokenService } from '@/auth/services/token/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { DecodedUser } from '@/types/user.types';
@@ -84,12 +84,12 @@ export class SocialController {
   @Get('link/google/callback')
   @UseGuards(AccessGuard, AuthGuard('google-link'))
   @CatchAndLog()
-  linkGoogleCallback(
+  async linkGoogleCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): void {
+  ): Promise<void> {
     const { error } = req.authResult || {};
-    return this.socialService.redirectAfterLink(
+    await this.socialService.redirectAfterLink(
       reply,
       error,
       '/userinfo',
@@ -100,12 +100,12 @@ export class SocialController {
   @Get('link/kakao/callback')
   @UseGuards(AccessGuard, AuthGuard('kakao-link'))
   @CatchAndLog()
-  linkKakaoCallback(
+  async linkKakaoCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): void {
+  ): Promise<void> {
     const { error } = req.authResult || {};
-    return this.socialService.redirectAfterLink(
+    await this.socialService.redirectAfterLink(
       reply,
       error,
       '/userinfo',
@@ -116,12 +116,12 @@ export class SocialController {
   @Get('link/naver/callback')
   @UseGuards(AccessGuard, AuthGuard('naver-link'))
   @CatchAndLog()
-  linkNaverCallback(
+  async linkNaverCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): void {
+  ): Promise<void> {
     const { error } = req.authResult || {};
-    return this.socialService.redirectAfterLink(
+    await this.socialService.redirectAfterLink(
       reply,
       error,
       '/userinfo',

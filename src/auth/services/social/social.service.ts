@@ -1,11 +1,16 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { FastifyReply } from 'fastify';
 import { Model } from 'mongoose';
 
-import { TokenService } from '@/auth/services/token.service';
+import { TokenService } from '@/auth/services/token/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
+import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
+import {
+  NoRemainingAuthMethodException,
+  UserNotFoundException,
+} from '@/common/exceptions/user.exceptions';
 import { AccessTokenPayload, PassportAuthResultError } from '@/types/user.types';
 import { User, UserDocument } from '@/user/schemas/user.schema';
 
@@ -42,32 +47,30 @@ export class SocialService {
     reply.redirect(`${frontendOrigin}/loginSuccess`);
   }
 
-  redirectAfterLink(
+  async redirectAfterLink(
     reply: FastifyReply,
     error: PassportAuthResultError,
     successPath: '/userinfo',
-    failueMessage: '이미 연동된 계정입니다.',
-  ): void {
+    failureMessage: '이미 연동된 계정입니다.',
+  ): Promise<void> {
     const frontendOrigin = this.config.getOrThrow<string>('app.frontendOrigin');
-    const target = error
-      ? `${frontendOrigin}${successPath}?error=${encodeURIComponent(failueMessage)}`
-      : frontendOrigin;
+    const isAlreadyLinkedError = error instanceof AlreadyLinkedException;
 
-    reply.redirect(target);
+    const query = isAlreadyLinkedError ? `?error=${encodeURIComponent(failureMessage)}` : '';
+    const target = `${frontendOrigin}${successPath}${query}`;
+
+    await reply.redirect(target);
   }
 
   async unlinkSocialAccount(userId: string, provider: 'google' | 'kakao' | 'naver'): Promise<void> {
     const user = await this.userModel.findById(userId);
     if (!user) {
-      throw new HttpException('사용자를 찾을 수 없습니다.', HttpStatus.NOT_FOUND);
+      throw new UserNotFoundException();
     }
     const accounts = user.socialAccounts.filter((acc) => acc.provider !== provider);
 
     if (accounts.length === 0) {
-      throw new HttpException(
-        '최소 하나 이상의 로그인 방식이 유지되어야 합니다.',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new NoRemainingAuthMethodException();
     }
     const token = await this.tokenService.generateOAuthToken({
       user: { socialAccounts: user.socialAccounts },

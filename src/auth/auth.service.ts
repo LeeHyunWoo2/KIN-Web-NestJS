@@ -4,7 +4,12 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
 
-import { TokenService } from '@/auth/services/token.service';
+import { TokenService } from '@/auth/services/token/token.service';
+import {
+  EmailAlreadyExistsException,
+  InvalidCredentialsException,
+  UsernameAlreadyExistsException,
+} from '@/common/exceptions/auth.exceptions';
 import { AccessTokenPayload, CreateUserInput, LoginUserInput, TokenPair } from '@/types/user.types';
 import { User, UserDocument } from '@/user/schemas/user.schema';
 
@@ -23,8 +28,12 @@ export class AuthService {
       $or: [{ username }, { email }],
     });
 
-    if (existingUser) {
-      throw new HttpException('User already exists', HttpStatus.BAD_REQUEST);
+    if (existingUser?.username === username) {
+      throw new UsernameAlreadyExistsException();
+    }
+
+    if (existingUser?.email === email) {
+      throw new EmailAlreadyExistsException();
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -47,21 +56,6 @@ export class AuthService {
     await user.save();
   }
 
-  /*  async loginUser(input: LoginUserInput): Promise<TokenPair> {
-    const { username, password, rememberMe } = input;
-
-    const user = await this.userModel.findOne({ username });
-
-    const isPasswordValid = user?.password ? await bcrypt.compare(password, user.password) : false;
-    if (!user || !isPasswordValid) {
-      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
-    }
-    return this.tokenService.generateTokens(
-      { _id: user._id.toString(), email: user.email, role: user.role },
-      rememberMe,
-      null,
-    );
-  }*/
   async loginUser(input: LoginUserInput): Promise<TokenPair> {
     const { username, password, rememberMe } = input;
 
@@ -69,7 +63,7 @@ export class AuthService {
     const isPasswordValid = user?.password ? await bcrypt.compare(password, user.password) : false;
 
     if (!user || !isPasswordValid) {
-      throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
+      throw new InvalidCredentialsException();
     }
 
     const payload: AccessTokenPayload = {
@@ -111,36 +105,5 @@ export class AuthService {
     };
 
     return this.tokenService.generateTokens(payload, ttlToUse);
-  }
-
-  /*
-  async getUserById(userId: string): Promise<AccessTokenPayload> {
-    const user = (await this.userModel
-      .findById(userId)
-      .select('-password')) as unknown as AccessTokenPayload;
-
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    };
-  }
-}
-*/
-  async getUserById(userId: string): Promise<AccessTokenPayload> {
-    const user = await this.userModel.findById(userId).select('email role');
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-
-    return {
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-    };
   }
 }

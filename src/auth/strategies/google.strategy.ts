@@ -30,9 +30,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ): Promise<AccessTokenPayload> {
     const providerId = profile.id;
 
-    const existngUser = await this.userService.findUserBySocialAccount('google', providerId);
-    if (existngUser) {
-      return existngUser;
+    const existingUser = await this.userService.findUserBySocialAccount('google', providerId);
+    if (existingUser) {
+      return existingUser;
     }
 
     return await this.userService.createSocialUser({

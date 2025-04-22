@@ -6,6 +6,7 @@ import { FastifyRequest } from 'fastify';
 import { Model } from 'mongoose';
 import { Profile, Strategy } from 'passport-google-oauth20';
 
+import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import { AccessTokenPayload } from '@/types/user.types';
 import { User, UserDocument } from '@/user/schemas/user.schema';
 
@@ -45,7 +46,7 @@ export class GoogleLinkStrategy extends PassportStrategy(Strategy, 'google-link'
     );
 
     if (alreadyLinked) {
-      throw { code: 11000 };
+      throw new AlreadyLinkedException();
     }
 
     user.socialAccounts.push({

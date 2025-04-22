@@ -37,9 +37,9 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
 
     const providerId = profile.id;
 
-    const existngUser = await this.userService.findUserBySocialAccount('kakao', providerId);
-    if (existngUser) {
-      return existngUser;
+    const existingUser = await this.userService.findUserBySocialAccount('kakao', providerId);
+    if (existingUser) {
+      return existingUser;
     }
 
     return await this.userService.createSocialUser({

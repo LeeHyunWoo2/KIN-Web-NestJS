@@ -17,7 +17,7 @@ import { AccessGuard } from '@/auth/access.guard';
 import { AuthService } from '@/auth/auth.service';
 import { LoginDto } from '@/auth/dto/login.dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
-import { TokenService } from '@/auth/services/token.service';
+import { TokenService } from '@/auth/services/token/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import {
@@ -66,10 +66,9 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<{ success: boolean }> {
-    const tokens = await this.authService.loginUser(loginDto as LoginUserInput);
+    const tokens: TokenPair = await this.authService.loginUser(loginDto as LoginUserInput);
 
-    // TODO: as unknown as 제거하기
-    setAuthCookies(reply, tokens as unknown as TokenPair);
+    setAuthCookies(reply, tokens);
     return { success: true };
   }
 
@@ -82,6 +81,8 @@ export class AuthController {
       example: {},
     },
   })
+
+  // TODO: 이거 좀 더 이쁘게 정리 가능할것같음. 컨트롤러에서 디코딩 하고 있는게 뭔가 이상함
   async logout(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -135,6 +136,6 @@ export class AuthController {
     },
   })
   checkSession(@CurrentUserDecorator() user: DecodedUser) {
-    return { user };
+    return user;
   }
 }

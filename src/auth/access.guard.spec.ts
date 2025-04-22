@@ -1,4 +1,4 @@
-import { TokenService } from '@/auth/services/token.service';
+import { TokenService } from '@/auth/services/token/token.service';
 
 import { AccessGuard } from './access.guard';
 

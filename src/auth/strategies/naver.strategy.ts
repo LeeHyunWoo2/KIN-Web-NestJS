@@ -30,9 +30,9 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
   ): Promise<AccessTokenPayload> {
     const providerId = profile.id;
 
-    const existngUser = await this.userService.findUserBySocialAccount('naver', providerId);
-    if (existngUser) {
-      return existngUser;
+    const existingUser = await this.userService.findUserBySocialAccount('naver', providerId);
+    if (existingUser) {
+      return existingUser;
     }
 
     return await this.userService.createSocialUser({

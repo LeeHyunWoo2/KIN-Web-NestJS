@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { SocialService } from '@/auth/services/social.service';
-import { TokenService } from '@/auth/services/token.service';
+import { SocialService } from '@/auth/services/social/social.service';
+import { TokenService } from '@/auth/services/token/token.service';
 import { GoogleStrategy } from '@/auth/strategies/google.strategy';
 import { GoogleLinkStrategy } from '@/auth/strategies/google-link.strategy';
 import { KakaoStrategy } from '@/auth/strategies/kakao.strategy';
@@ -14,6 +14,9 @@ import { User, UserSchema } from '@/user/schemas/user.schema';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { EmailController } from './controllers/email/email.controller';
+import { SocialController } from './controllers/social/social.controller';
+import { EmailService } from './services/email/email.service';
 
 @Module({
   imports: [
@@ -24,7 +27,7 @@ import { AuthService } from './auth.service';
       },
     ]),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, EmailController, SocialController],
   providers: [
     AuthService,
     TokenService,
@@ -36,6 +39,7 @@ import { AuthService } from './auth.service';
     GoogleLinkStrategy,
     NaverLinkStrategy,
     KakaoLinkStrategy,
+    EmailService,
   ],
   exports: [AuthService, TokenService, SocialService],
 })
