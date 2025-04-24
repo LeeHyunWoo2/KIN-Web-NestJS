@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
-import { TokenService } from '@/auth/services/token/token.service';
+import { TokenService } from '@/auth/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { EmailSendFailedException } from '@/common/exceptions/auth.exceptions';
 

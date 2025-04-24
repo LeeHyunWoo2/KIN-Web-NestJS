@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FastifyReply } from 'fastify';
 import { Model } from 'mongoose';
 
-import { TokenService } from '@/auth/services/token/token.service';
+import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import {

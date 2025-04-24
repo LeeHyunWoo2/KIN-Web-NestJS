@@ -1,46 +1,51 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 
-import { SocialService } from '@/auth/services/social/social.service';
-import { TokenService } from '@/auth/services/token/token.service';
-import { GoogleStrategy } from '@/auth/strategies/google.strategy';
-import { GoogleLinkStrategy } from '@/auth/strategies/google-link.strategy';
-import { KakaoStrategy } from '@/auth/strategies/kakao.strategy';
-import { KakaoLinkStrategy } from '@/auth/strategies/kakao-link.strategy';
-import { NaverStrategy } from '@/auth/strategies/naver.strategy';
-import { NaverLinkStrategy } from '@/auth/strategies/naver-link.strategy';
 import { RedisProvider } from '@/config/redis.provider.config';
-import { User, UserSchema } from '@/user/schemas/user.schema';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { EmailController } from './controllers/email/email.controller';
-import { SocialController } from './controllers/social/social.controller';
-import { EmailService } from './services/email/email.service';
+import { EmailController } from './email.controller';
+import { EmailService } from './email.service';
+import { SocialController } from './social.controller';
+import { SocialService } from './social.service';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GoogleLinkStrategy } from './strategies/google-link.strategy';
+import { KakaoStrategy } from './strategies/kakao.strategy';
+import { KakaoLinkStrategy } from './strategies/kakao-link.strategy';
+import { NaverStrategy } from './strategies/naver.strategy';
+import { NaverLinkStrategy } from './strategies/naver-link.strategy';
+import { TokenService } from './token.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      {
-        name: User.name,
-        schema: UserSchema,
-      },
-    ]),
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('auth.accessTokenSecret'),
+        signOptions: {
+          expiresIn: config.getOrThrow<number>('auth.jwtExpiration'),
+        },
+      }),
+    }),
   ],
   controllers: [AuthController, EmailController, SocialController],
   providers: [
     AuthService,
+    EmailService,
+    SocialService,
     TokenService,
     RedisProvider,
     GoogleStrategy,
-    NaverStrategy,
     KakaoStrategy,
-    SocialService,
+    NaverStrategy,
     GoogleLinkStrategy,
-    NaverLinkStrategy,
     KakaoLinkStrategy,
-    EmailService,
+    NaverLinkStrategy,
   ],
-  exports: [AuthService, TokenService, SocialService],
+  exports: [TokenService],
 })
 export class AuthModule {}

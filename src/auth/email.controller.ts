@@ -4,8 +4,8 @@ import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { RequestEmailTokenDto } from '@/auth/dto/request-email-token.dto';
 import { SendVerificationEmailResponseDto } from '@/auth/dto/send-verification-email-response.dto';
 import { VerifyEmailTokenResponseDto } from '@/auth/dto/verify-email-token-response.dto';
-import { EmailService } from '@/auth/services/email/email.service';
-import { TokenService } from '@/auth/services/token/token.service';
+import { EmailService } from '@/auth/email.service';
+import { TokenService } from '@/auth/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 
 @ApiTags('Auth')

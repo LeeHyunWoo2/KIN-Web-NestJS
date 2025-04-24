@@ -1,6 +1,6 @@
 import { Aspect, LazyDecorator, WrapParams } from '@toss/nestjs-aop';
 
-import { logError } from '@/common/utils/log-error';
+import { logError } from '@/common/log-error';
 
 import { CATCH_AND_LOG } from '../symbols/catch-and-log.symbol';
 

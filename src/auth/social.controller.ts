@@ -4,8 +4,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
-import { SocialService } from '@/auth/services/social/social.service';
-import { TokenService } from '@/auth/services/token/token.service';
+import { SocialService } from '@/auth/social.service';
+import { TokenService } from '@/auth/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { DecodedUser } from '@/types/user.types';

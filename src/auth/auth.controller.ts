@@ -17,7 +17,7 @@ import { AccessGuard } from '@/auth/access.guard';
 import { AuthService } from '@/auth/auth.service';
 import { LoginDto } from '@/auth/dto/login.dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
-import { TokenService } from '@/auth/services/token/token.service';
+import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import {
@@ -38,7 +38,7 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(201)
-  @ApiOperation({ summary: '회원가입 (로컬) ' })
+  @ApiOperation({ summary: '회원가입 (로컬)' })
   async register(@Body() dto: RegisterDto): Promise<void> {
     const input: CreateUserInput = {
       username: dto.username,
@@ -82,7 +82,8 @@ export class AuthController {
     },
   })
 
-  // TODO: 이거 좀 더 이쁘게 정리 가능할것같음. 컨트롤러에서 디코딩 하고 있는게 뭔가 이상함
+  // TODO: 컨트롤러에서 디코딩 하고 있는게 뭔가 이상함
+  //  jwt.decode(refreshToken) as RefreshTokenPayload; 대신 리프레시 토큰을 디코드 하는 다른 함수를 활용하는쪽으로 리팩토링 예정
   async logout(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,

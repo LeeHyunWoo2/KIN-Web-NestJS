@@ -4,7 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import { Model } from 'mongoose';
 
-import { TokenService } from '@/auth/services/token/token.service';
+import { TokenService } from '@/auth/token.service';
 import {
   EmailAlreadyExistsException,
   InvalidCredentialsException,

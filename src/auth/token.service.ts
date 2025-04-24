@@ -23,6 +23,7 @@ import {
 @Injectable()
 export class TokenService {
   private readonly accessTokenSecret: string;
+  private readonly refreshTokenSecret: string;
 
   constructor(
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
@@ -30,6 +31,7 @@ export class TokenService {
     private readonly config: ConfigService,
   ) {
     this.accessTokenSecret = config.getOrThrow<string>('auth.accessTokenSecret');
+    this.refreshTokenSecret = config.getOrThrow<string>('auth.refreshTokenSecret');
   }
 
   @CatchAndLog()
@@ -42,7 +44,7 @@ export class TokenService {
     const refreshToken = await this.jwtService.signAsync(
       { id: payload.id },
       {
-        secret: this.config.get<string>('auth.refreshTokenSecret'),
+        secret: this.refreshTokenSecret,
         expiresIn: refreshTtl,
       },
     );
@@ -76,22 +78,23 @@ export class TokenService {
   @CatchAndLog()
   @LogExecutionTime()
   async verifyRefreshToken(refreshToken: string): Promise<{ id: string; rememberMe: boolean }> {
+    let decoded: { id: string };
     try {
-      const decoded = await this.jwtService.verifyAsync<{ id: string }>(refreshToken, {
-        secret: this.config.get<string>('auth.refreshTokenSecret'),
+      decoded = await this.jwtService.verifyAsync<{ id: string }>(refreshToken, {
+        secret: this.refreshTokenSecret,
         algorithms: ['HS256'],
       });
-
-      const stored = await this.redisClient.get(`refreshToken:${decoded.id}`);
-      if (!stored) throw new RefreshTokenNotFoundException();
-
-      const parsed = JSON.parse(stored) as { token: string; rememberMe: boolean };
-      if (parsed.token !== refreshToken) throw new RefreshTokenMismatchException();
-
-      return { id: decoded.id, rememberMe: parsed.rememberMe };
     } catch {
       throw new RefreshTokenInvalidException();
     }
+
+    const stored = await this.redisClient.get(`refreshToken:${decoded.id}`);
+    if (!stored) throw new RefreshTokenNotFoundException();
+
+    const parsed = JSON.parse(stored) as { token: string; rememberMe: boolean };
+    if (parsed.token !== refreshToken) throw new RefreshTokenMismatchException();
+
+    return { id: decoded.id, rememberMe: parsed.rememberMe };
   }
 
   @CatchAndLog()
@@ -149,7 +152,7 @@ export class TokenService {
   async invalidateAccessToken(accessToken: string): Promise<void> {
     const decoded = await this.verifyAccessToken(accessToken);
     if (!decoded) return;
-    const ttl = decoded.exp ? Math.floor((decoded.exp - Date.now()) / 1000) : 0;
+    const ttl = decoded.exp ? Math.floor((decoded.exp * 1000 - Date.now()) / 1000) : 0;
     if (ttl > 0) await this.redisClient.set(`blacklist:${accessToken}`, 'true', 'EX', ttl);
   }
 
