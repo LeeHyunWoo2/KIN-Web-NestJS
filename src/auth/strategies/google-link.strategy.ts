@@ -1,20 +1,24 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
 import { PassportStrategy } from '@nestjs/passport';
 import { FastifyRequest } from 'fastify';
-import { Model } from 'mongoose';
 import { Profile, Strategy } from 'passport-google-oauth20';
 
 import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import { AccessTokenPayload } from '@/types/user.types';
-import { User, UserDocument } from '@/user/schemas/user.schema';
+import { SocialAccount } from '@/user/entity/social-account.entity';
+import { User } from '@/user/entity/user.entity';
 
 @Injectable()
 export class GoogleLinkStrategy extends PassportStrategy(Strategy, 'google-link') {
   constructor(
     private readonly configService: ConfigService,
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectRepository(User)
+    private readonly userRepository: EntityRepository<User>,
+    @InjectRepository(SocialAccount)
+    private readonly socialAccountRepository: EntityRepository<SocialAccount>,
   ) {
     super({
       clientID: configService.getOrThrow<string>('oauth.google.clientId'),
@@ -30,35 +34,40 @@ export class GoogleLinkStrategy extends PassportStrategy(Strategy, 'google-link'
     refreshToken: string,
     profile: Profile,
   ): Promise<AccessTokenPayload> {
-    const userId = (req.user as AccessTokenPayload)?.id;
-    if (!userId) {
+    const id = (req.user as AccessTokenPayload)?.id;
+    if (!id) {
       throw new Error('로그인된 사용자만 소셜 연동이 가능합니다.');
     }
 
-    const user = await this.userModel.findById(userId);
+    const user = await this.userRepository.findOne(id);
     if (!user) {
       throw new Error('사용자를 찾을 수 없습니다.');
     }
 
     const providerId = profile.id;
-    const alreadyLinked = user.socialAccounts.some(
-      (acc) => acc.provider === 'google' && acc.providerId === providerId,
-    );
+
+    const alreadyLinked = await this.socialAccountRepository.findOne({
+      provider: 'google',
+      providerId,
+    });
 
     if (alreadyLinked) {
       throw new AlreadyLinkedException();
     }
 
-    user.socialAccounts.push({
+    const googleAccountLink = this.socialAccountRepository.create({
+      user,
       provider: 'google',
-      providerId,
+      providerId: providerId,
       socialRefreshToken: refreshToken,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
-    await user.save();
+    await this.socialAccountRepository.getEntityManager().persistAndFlush(googleAccountLink);
 
     return {
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
     };

@@ -1,22 +1,16 @@
 import { Controller, Delete, Get, Param, Req, Res, UseGuards } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { SocialService } from '@/auth/social.service';
-import { TokenService } from '@/auth/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { DecodedUser } from '@/types/user.types';
 
 @Controller('auth/social')
 export class SocialController {
-  constructor(
-    private readonly tokenService: TokenService,
-    private readonly configService: ConfigService,
-    private readonly socialService: SocialService,
-  ) {}
+  constructor(private readonly socialService: SocialService) {}
 
   @Get('google')
   @UseGuards(AuthGuard('google'))

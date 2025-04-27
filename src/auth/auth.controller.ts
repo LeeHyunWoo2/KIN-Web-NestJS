@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
-import jwt from 'jsonwebtoken';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { AuthService } from '@/auth/auth.service';
@@ -20,13 +19,7 @@ import { RegisterDto } from '@/auth/dto/register.dto';
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
-import {
-  CreateUserInput,
-  DecodedUser,
-  LoginUserInput,
-  RefreshTokenPayload,
-  TokenPair,
-} from '@/types/user.types';
+import { CreateUserInput, DecodedUser, LoginUserInput, TokenPair } from '@/types/user.types';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -82,8 +75,7 @@ export class AuthController {
     },
   })
 
-  // TODO: 컨트롤러에서 디코딩 하고 있는게 뭔가 이상함
-  //  jwt.decode(refreshToken) as RefreshTokenPayload; 대신 리프레시 토큰을 디코드 하는 다른 함수를 활용하는쪽으로 리팩토링 예정
+  // 예외가 발생해도 무시하고 쿠키 삭제만 진행
   async logout(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -92,8 +84,12 @@ export class AuthController {
     const refreshToken = req.cookies?.refreshToken;
 
     if (refreshToken) {
-      const decoded = jwt.decode(refreshToken) as RefreshTokenPayload;
-      await this.tokenService.deleteRefreshTokenFromRedis(decoded.id);
+      try {
+        const { id } = await this.tokenService.verifyRefreshToken(refreshToken);
+        await this.tokenService.deleteRefreshTokenFromRedis(id);
+      } catch {
+        // 예외가 발생해도 무시하고 삭제 진행
+      }
     }
 
     if (accessToken) {
@@ -129,7 +125,7 @@ export class AuthController {
     schema: {
       example: {
         user: {
-          id: 'string',
+          id: 'number',
           email: 'string',
           role: 'user | admin',
         },

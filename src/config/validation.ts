@@ -46,4 +46,10 @@ export default Joi.object({
   NAVER_CLIENT_SECRET: Joi.string().required(),
   NAVER_CALLBACK_URL: Joi.string().uri().required(),
   NAVER_LINK_CALLBACK_URL: Joi.string().uri().required(),
+
+  POSTGRES_HOST: Joi.string().required(),
+  POSTGRES_POR: Joi.number().required(),
+  POSTGRES_USER: Joi.string().required(),
+  POSTGRES_PASSWORD: Joi.string().required(),
+  POSTGRES_DB: Joi.string().required(),
 });

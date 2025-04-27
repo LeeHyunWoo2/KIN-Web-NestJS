@@ -17,6 +17,7 @@ import {
   AccessTokenPayload,
   EmailTokenPayload,
   GenerateOAuthToken,
+  RefreshTokenPayload,
   TokenPair,
 } from '@/types/user.types';
 
@@ -77,10 +78,10 @@ export class TokenService {
 
   @CatchAndLog()
   @LogExecutionTime()
-  async verifyRefreshToken(refreshToken: string): Promise<{ id: string; rememberMe: boolean }> {
-    let decoded: { id: string };
+  async verifyRefreshToken(refreshToken: string): Promise<RefreshTokenPayload> {
+    let decoded: { id: number };
     try {
-      decoded = await this.jwtService.verifyAsync<{ id: string }>(refreshToken, {
+      decoded = await this.jwtService.verifyAsync<{ id: number }>(refreshToken, {
         secret: this.refreshTokenSecret,
         algorithms: ['HS256'],
       });
@@ -159,14 +160,14 @@ export class TokenService {
   @CatchAndLog()
   @LogExecutionTime()
   async saveRefreshTokenToRedis(
-    userId: string,
+    id: number,
     refreshToken: string,
     ttl: number,
     rememberMe: boolean,
   ): Promise<void> {
     try {
       await this.redisClient.set(
-        `refreshToken:${userId}`,
+        `refreshToken:${id}`,
         JSON.stringify({ token: refreshToken, rememberMe }),
         'EX',
         ttl,
@@ -176,9 +177,9 @@ export class TokenService {
     }
   }
 
-  async deleteRefreshTokenFromRedis(userId: string): Promise<void> {
-    await this.redisClient.del(`refreshToken:${userId}`);
-    await this.redisClient.del(`publicProfile:${userId}`);
+  async deleteRefreshTokenFromRedis(id: number): Promise<void> {
+    await this.redisClient.del(`refreshToken:${id}`);
+    await this.redisClient.del(`publicProfile:${id}`);
   }
 
   @CatchAndLog()

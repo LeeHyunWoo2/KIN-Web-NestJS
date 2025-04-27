@@ -1,7 +1,7 @@
 import { JwtPayload } from 'jsonwebtoken';
 
 export interface UserSnapshot {
-  _id: string;
+  id: number;
   username?: string;
   name: string;
   email: string;
@@ -35,15 +35,14 @@ export interface SocialAccount {
 export type UserRole = 'user' | 'admin';
 
 export interface AccessTokenPayload extends JwtPayload {
-  id: string;
+  id: number;
   email: string;
   role: UserRole;
 }
 
 export interface RefreshTokenPayload extends JwtPayload {
-  id: string;
+  id: number;
   rememberMe: boolean;
-  ttl: number;
 }
 
 export interface SocialTokenUser {
@@ -68,7 +67,7 @@ export interface TokenPair {
 }
 
 export type PublicUserProfile = Pick<UserSnapshot, 'name' | 'email' | 'profileIcon' | 'role'> & {
-  userId: string;
+  id: number;
 };
 
 export interface CreateUserInput {
@@ -105,7 +104,7 @@ export interface UpdateUserProfileData {
 
 export interface FindUserQuery {
   input: string;
-  inputType: string;
+  inputType: 'username' | 'email';
 }
 
 export type PassportAuthResultError =

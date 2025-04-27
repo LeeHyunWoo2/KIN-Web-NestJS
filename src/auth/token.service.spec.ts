@@ -24,14 +24,14 @@ describe('TokenService', () => {
         },
       });
       const result = await tokenService.generateTokens(
-        { id: 'user123', email: 'user@email.com', role: 'user' },
+        { id: 123456, email: 'user@email.com', role: 'user' },
         604800,
       );
       expect(result.accessToken).toBe('access-token');
       expect(result.refreshToken).toBe('refresh-token');
       expect(result.refreshTokenTtl).toBe(604800);
       expect(redis.set).toHaveBeenCalledWith(
-        'refreshToken:user123',
+        'refreshToken:123456',
         JSON.stringify({
           token: 'refresh-token',
           rememberMe: false,
@@ -45,7 +45,7 @@ describe('TokenService', () => {
   describe('verifyAccessToken', () => {
     const accessToken = 'test-access-token';
     it('토큰이 유효하고 블랙리스트가 아닌 경우 페이로드를 반환해야 합니다. ', async () => {
-      const payload = { id: 'user123', email: 'user@email.com', role: 'user', exp: 123456789 };
+      const payload = { id: 123456, email: 'user@email.com', role: 'user', exp: 123456789 };
 
       const { tokenService, redis, jwt } = await setupTokenServiceTest({
         redis: {
@@ -103,7 +103,7 @@ describe('TokenService', () => {
   describe('verifyRefreshToken', () => {
     it('저장된 refreshToken과 일치하면 사용자 ID와 rememberMe를 반환해야 합니다.', async () => {
       const refreshToken = 'valid-refresh-token';
-      const decoded = { id: 'user123' };
+      const decoded = { id: 123456 };
       const stored = JSON.stringify({ token: refreshToken, rememberMe: true });
 
       const { tokenService, redis, jwt } = await setupTokenServiceTest({
@@ -115,12 +115,12 @@ describe('TokenService', () => {
         },
       });
       const result = await tokenService.verifyRefreshToken(refreshToken);
-      expect(result).toEqual({ id: 'user123', rememberMe: true });
+      expect(result).toEqual({ id: 123456, rememberMe: true });
       expect(jwt.verifyAsync).toHaveBeenCalledWith(refreshToken, {
         secret: 'refresh-secret',
         algorithms: ['HS256'],
       });
-      expect(redis.get).toHaveBeenCalledWith('refreshToken:user123');
+      expect(redis.get).toHaveBeenCalledWith('refreshToken:123456');
     });
     it('JWT 토큰 파싱에 실패하면 RefreshTokenInvalidException 커스텀 에러를 던져야 합니다.', async () => {
       const refreshToken = 'invalid-refresh-token';
@@ -136,7 +136,7 @@ describe('TokenService', () => {
     });
     it('저장된 refreshToken과 일치하지 않으면 RefreshTokenMismatchException 를 던져야 합니다.', async () => {
       const refreshToken = 'different-refresh-token';
-      const decoded = { id: 'user123' };
+      const decoded = { id: 123456 };
       const stored = JSON.stringify({ token: 'valid-refresh-token', rememberMe: true });
       const { tokenService } = await setupTokenServiceTest({
         redis: {
@@ -152,7 +152,7 @@ describe('TokenService', () => {
     });
     it('저장된 refreshToken이 없으면 예외를 던져야 합니다.', async () => {
       const refreshToken = 'missing-refresh-token';
-      const decoded = { id: 'user123' };
+      const decoded = { id: 123456 };
 
       const { tokenService } = await setupTokenServiceTest({
         jwt: {
@@ -175,9 +175,9 @@ describe('TokenService', () => {
           ttl: jest.fn().mockResolvedValue(604800),
         },
       });
-      const result = await tokenService.getRemainingTtl('refreshToken:user123');
+      const result = await tokenService.getRemainingTtl('refreshToken:123456');
       expect(result).toBe(604800);
-      expect(redis.ttl).toHaveBeenCalledWith('refreshToken:user123');
+      expect(redis.ttl).toHaveBeenCalledWith('refreshToken:123456');
     });
     it('TTL이 -1 또는 -2 일 경우 RefreshTokenInvalidException을 던져야 합니다.', async () => {
       const { tokenService } = await setupTokenServiceTest({
@@ -185,7 +185,7 @@ describe('TokenService', () => {
           ttl: jest.fn().mockResolvedValue(-1),
         },
       });
-      await expect(tokenService.getRemainingTtl('refreshToken:user123')).rejects.toThrow(
+      await expect(tokenService.getRemainingTtl('refreshToken:123456')).rejects.toThrow(
         new RefreshTokenInvalidException(),
       );
     });
@@ -314,14 +314,14 @@ describe('TokenService', () => {
     it('refreshToken을 Redis에 저장해야 합니다.', async () => {
       const { tokenService, redis } = await setupTokenServiceTest({});
 
-      const userId = 'user123';
+      const id = 123456;
       const refreshToken = 'valid-refresh-token';
       const ttl = 604800;
       const rememberMe = true;
 
-      await tokenService.saveRefreshTokenToRedis(userId, refreshToken, ttl, rememberMe);
+      await tokenService.saveRefreshTokenToRedis(id, refreshToken, ttl, rememberMe);
       expect(redis.set).toHaveBeenCalledWith(
-        `refreshToken:${userId}`,
+        `refreshToken:${id}`,
         JSON.stringify({ token: refreshToken, rememberMe }),
         'EX',
         ttl,
@@ -336,7 +336,7 @@ describe('TokenService', () => {
         },
       });
       await expect(
-        tokenService.saveRefreshTokenToRedis('user123', 'token', 3600, true),
+        tokenService.saveRefreshTokenToRedis(123456, 'token', 3600, true),
       ).rejects.toThrow('문제가 발생했습니다. 다시 시도해주세요');
     });
   });
@@ -359,7 +359,7 @@ describe('TokenService', () => {
         },
       });
       jest.spyOn(tokenService, 'verifyAccessToken').mockResolvedValue({
-        id: 'user123',
+        id: 123456,
         email: 'user@email.com',
         role: 'user',
         exp: mockExp,
@@ -385,7 +385,7 @@ describe('TokenService', () => {
       const accessToken = 'expired-token';
       const { tokenService, redis } = await setupTokenServiceTest({});
       jest.spyOn(tokenService, 'verifyAccessToken').mockResolvedValue({
-        id: 'user123',
+        id: 123456,
         email: 'user@email.com',
         role: 'user',
         exp: undefined,
@@ -403,9 +403,9 @@ describe('TokenService', () => {
           del: redisDeleteMock,
         },
       });
-      await tokenService.deleteRefreshTokenFromRedis('user123');
-      expect(redisDeleteMock).toHaveBeenCalledWith('refreshToken:user123');
-      expect(redisDeleteMock).toHaveBeenCalledWith('publicProfile:user123');
+      await tokenService.deleteRefreshTokenFromRedis(123456);
+      expect(redisDeleteMock).toHaveBeenCalledWith('refreshToken:123456');
+      expect(redisDeleteMock).toHaveBeenCalledWith('publicProfile:123456');
     });
   });
 

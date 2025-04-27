@@ -1,8 +1,8 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
 import { FastifyReply } from 'fastify';
-import { Model } from 'mongoose';
 
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
@@ -12,14 +12,18 @@ import {
   UserNotFoundException,
 } from '@/common/exceptions/user.exceptions';
 import { AccessTokenPayload, PassportAuthResultError } from '@/types/user.types';
-import { User, UserDocument } from '@/user/schemas/user.schema';
+import { SocialAccount } from '@/user/entity/social-account.entity';
+import { User } from '@/user/entity/user.entity';
 
 @Injectable()
 export class SocialService {
   constructor(
     private readonly config: ConfigService,
     private readonly tokenService: TokenService,
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectRepository(User)
+    private readonly userRepository: EntityRepository<User>,
+    @InjectRepository(SocialAccount)
+    private readonly socialAccountRepository: EntityRepository<SocialAccount>,
   ) {}
 
   async handleSocialCallbackResult(
@@ -62,25 +66,35 @@ export class SocialService {
     await reply.redirect(target);
   }
 
-  async unlinkSocialAccount(userId: string, provider: 'google' | 'kakao' | 'naver'): Promise<void> {
-    const user = await this.userModel.findById(userId);
+  async unlinkSocialAccount(id: number, provider: 'google' | 'kakao' | 'naver'): Promise<void> {
+    const user = await this.userRepository.findOne(id);
     if (!user) {
       throw new UserNotFoundException();
     }
-    const accounts = user.socialAccounts.filter((acc) => acc.provider !== provider);
 
-    if (accounts.length === 0) {
-      throw new NoRemainingAuthMethodException();
-    }
-    const token = await this.tokenService.generateOAuthToken({
-      user: { socialAccounts: user.socialAccounts },
-      provider,
+    const remainingAccounts = await this.socialAccountRepository.find({
+      user,
+      provider: { $ne: provider },
     });
 
-    await this.revokeSocialAccess(provider, token);
+    if (remainingAccounts.length === 0) {
+      throw new NoRemainingAuthMethodException();
+    }
 
-    user.socialAccounts = accounts;
-    await user.save();
+    const account = await this.socialAccountRepository.findOne({
+      user,
+      provider,
+    });
+    if (account) {
+      const token = await this.tokenService.generateOAuthToken({
+        user: { socialAccounts: [{ provider: account.provider, providerId: account.providerId }] },
+        provider,
+      });
+
+      await this.revokeSocialAccess(provider, token);
+
+      await this.socialAccountRepository.getEntityManager().removeAndFlush(account);
+    }
   }
 
   private async revokeSocialAccess(

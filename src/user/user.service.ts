@@ -1,8 +1,8 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
 import { Redis } from 'ioredis';
-import { Model } from 'mongoose';
 
 import { TokenService } from '@/auth/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
@@ -17,31 +17,35 @@ import {
   UpdateUserProfileData,
 } from '@/types/user.types';
 
-import { User, UserDocument } from './schemas/user.schema';
+import { SocialAccount } from './entity/social-account.entity';
+import { User } from './entity/user.entity';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectRepository(User)
+    private readonly userRepository: EntityRepository<User>,
+    @InjectRepository(SocialAccount)
+    private readonly socialAccountRepository: EntityRepository<SocialAccount>,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
     private readonly tokenService: TokenService,
   ) {}
 
   @CatchAndLog()
   @LogExecutionTime()
-  async getPublicProfile(userId: string): Promise<PublicUserProfile> {
-    const cacheKey = `publicProfile:${userId}`;
+  async getPublicProfile(id: number): Promise<PublicUserProfile> {
+    const cacheKey = `publicProfile:${id}`;
     const cached = await this.redisClient.get(cacheKey);
     if (cached) return JSON.parse(cached) as PublicUserProfile;
 
-    const user = await this.userModel.findById(userId).select('name email profileIcon role');
+    const user = await this.userRepository.findOne(id);
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const profile: PublicUserProfile = {
       name: user.name,
       email: user.email,
       profileIcon: user.profileIcon,
-      userId,
+      id: user.id,
       role: user.role,
     };
 
@@ -50,12 +54,24 @@ export class UserService {
   }
 
   @CatchAndLog()
-  async getUserInfo(userId: string): Promise<SafeUserInfo> {
-    const user = await this.userModel
-      .findById(userId)
-      .select('-password, -passwordHistory, -deleteQueue');
+  async getUserInfo(id: number): Promise<SafeUserInfo> {
+    const user = await this.userRepository.findOne(id, {
+      fields: [
+        'id',
+        'username',
+        'name',
+        'email',
+        'marketingConsent',
+        'role',
+        'profileIcon',
+        'lastActivity',
+        'createdAt',
+        'updatedAt',
+      ],
+      populate: ['socialAccounts'],
+    });
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    return user.toObject();
+    return user;
   }
 
   @CatchAndLog()
@@ -64,15 +80,17 @@ export class UserService {
   ): Promise<FindUserQueryData> {
     const { input, inputType, fetchUsername } = query;
 
-    const user = await this.userModel
-      .findOne({ [inputType]: input })
-      .select(fetchUsername ? 'username' : 'email' + 'socialAccounts');
+    const user = await this.userRepository.findOne({ [inputType]: input });
 
     if (!user) {
       return { signal: 'user_not_found' };
     }
 
-    const hasLocalAccount = user.socialAccounts.some((account) => account.provider === 'local');
+    const hasLocalAccount = await this.socialAccountRepository.findOne({
+      user,
+      provider: 'local',
+    });
+
     const accountType: 'Local' | 'SNS' = hasLocalAccount ? 'Local' : 'SNS';
 
     return {
@@ -87,36 +105,37 @@ export class UserService {
     provider: 'google' | 'kakao' | 'naver',
     providerId: string,
   ): Promise<AccessTokenPayload | null> {
-    const user = await this.userModel.findOne({
-      socialAccounts: {
-        $elemMatch: { provider, providerId },
+    const account = await this.socialAccountRepository.findOne(
+      {
+        provider,
+        providerId,
       },
-    });
-
-    if (!user) return null;
+      {
+        populate: ['user'],
+      },
+    );
+    if (!account || !account.user) return null;
 
     return {
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
+      id: account.user.id,
+      email: account.user.email,
+      role: account.user.role,
     };
   }
 
   @CatchAndLog()
-  async updateUser(
-    userId: string,
-    data: UpdateUserProfileData,
-  ): Promise<Partial<PublicUserProfile>> {
-    this.ensureNotTestAccount(userId);
+  async updateUser(id: number, data: UpdateUserProfileData): Promise<Partial<PublicUserProfile>> {
+    this.ensureNotTestAccount(id);
 
-    const user = await this.userModel.findById(userId);
+    const user = await this.userRepository.findOne(id);
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     if (data.name) user.name = data.name;
     if (data.profileIcon) user.profileIcon = data.profileIcon;
-    await user.save();
 
-    const cacheKey = `publicProfile:${userId}`;
+    await this.userRepository.getEntityManager().persistAndFlush(user);
+
+    const cacheKey = `publicProfile:${id}`;
     const cached = await this.redisClient.get(cacheKey);
     const ttl = await this.redisClient.ttl(cacheKey);
 
@@ -138,7 +157,7 @@ export class UserService {
 
   @CatchAndLog()
   async resetPassword(email: string, newPassword: string): Promise<void> {
-    const user = await this.userModel.findOne({ email });
+    const user = await this.userRepository.findOne({ email });
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password || '');
@@ -160,32 +179,43 @@ export class UserService {
       .slice(-4)
       .concat({ password: hashedPassword, changedAt: new Date() });
 
-    await user.save();
+    await this.userRepository.getEntityManager().persistAndFlush(user);
   }
 
   @CatchAndLog()
   async addLocalAccount(
-    userId: string,
+    id: number,
     username: string,
     email: string,
     password: string,
   ): Promise<void> {
-    const user = await this.userModel.findById(userId);
+    const user = await this.userRepository.findOne(id);
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
-    const hasLocalAccount = user.socialAccounts.some((account) => account.provider === 'local');
-    if (hasLocalAccount)
+    const hasLocalAccount = await this.socialAccountRepository.findOne({
+      user,
+      provider: 'local',
+    });
+
+    if (hasLocalAccount) {
       throw new HttpException('이미 로컬 계정이 존재합니다.', HttpStatus.BAD_REQUEST);
+    }
 
     user.username = username;
     user.email = email;
     user.password = await bcrypt.hash(password, 10);
-    user.socialAccounts = user.socialAccounts.concat({
+
+    await this.userRepository.getEntityManager().persistAndFlush(user);
+
+    const localAccount = this.socialAccountRepository.create({
+      user,
       provider: 'local',
       providerId: username,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
-    await user.save();
+    await this.socialAccountRepository.getEntityManager().persistAndFlush(localAccount);
   }
 
   async createSocialUser(input: {
@@ -196,31 +226,40 @@ export class UserService {
     profileIcon?: string;
     socialRefreshToken?: string;
   }): Promise<AccessTokenPayload> {
-    const user = new this.userModel({
-      email: input.email,
+    const user = this.userRepository.create({
+      email: input.email ?? '',
       name: input.name,
-      profileIcon: input.profileIcon,
-      termsAgreed: true,
-      socialAccounts: [
-        {
-          provider: input.provider,
-          providerId: input.providerId,
-          socialRefreshToken: input.socialRefreshToken,
-        },
-      ],
+      role: 'user',
+      profileIcon:
+        input.profileIcon ??
+        'https://static.vecteezy.com/system/resources/thumbnails/002/318/271/small/user-profile-icon-free-vector.jpg',
+      marketingConsent: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
-    await user.save();
+    await this.userRepository.getEntityManager().persistAndFlush(user);
+
+    const socialAccount = this.socialAccountRepository.create({
+      user,
+      provider: input.provider,
+      providerId: input.providerId,
+      socialRefreshToken: input.socialRefreshToken,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await this.socialAccountRepository.getEntityManager().persistAndFlush(socialAccount);
 
     return {
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
     };
   }
 
-  async deleteUser(userId: string, accessToken?: string, refreshToken?: string): Promise<void> {
-    this.ensureNotTestAccount(userId);
+  async deleteUser(id: number, accessToken?: string, refreshToken?: string): Promise<void> {
+    this.ensureNotTestAccount(id);
 
     if (refreshToken) {
       const decoded = await this.tokenService.verifyRefreshToken(refreshToken);
@@ -231,13 +270,17 @@ export class UserService {
       await this.tokenService.invalidateAccessToken(accessToken);
     }
 
-    await this.userModel.findByIdAndDelete(userId);
+    const user = await this.userRepository.findOne(id);
+    if (user) {
+      await this.userRepository.getEntityManager().removeAndFlush(user);
+    }
   }
 
   @CatchAndLog()
-  private ensureNotTestAccount(userId: string): void {
-    const testAccounts = ['672ae1ad9595d29f7bfbf34a', '672ae28b9595d29f7bfbf353'];
-    if (testAccounts.includes(userId)) {
+  private ensureNotTestAccount(id: number): void {
+    // const testAccounts = ['672ae1ad9595d29f7bfbf34a', '672ae28b9595d29f7bfbf353'];
+    const testAccounts = [123456789, 987654321];
+    if (testAccounts.includes(id)) {
       throw new HttpException('테스트 계정은 변경할 수 없습니다.', HttpStatus.I_AM_A_TEAPOT);
     }
   }

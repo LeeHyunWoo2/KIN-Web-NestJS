@@ -1,8 +1,8 @@
+import { InjectRepository } from '@mikro-orm/nestjs';
+import { EntityRepository } from '@mikro-orm/postgresql';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
-import { Model } from 'mongoose';
 
 import { TokenService } from '@/auth/token.service';
 import {
@@ -11,12 +11,16 @@ import {
   UsernameAlreadyExistsException,
 } from '@/common/exceptions/auth.exceptions';
 import { AccessTokenPayload, CreateUserInput, LoginUserInput, TokenPair } from '@/types/user.types';
-import { User, UserDocument } from '@/user/schemas/user.schema';
+import { SocialAccount } from '@/user/entity/social-account.entity';
+import { User } from '@/user/entity/user.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectRepository(User)
+    private readonly userRepository: EntityRepository<User>,
+    @InjectRepository(SocialAccount)
+    private readonly socialAccountRepository: EntityRepository<SocialAccount>,
     private readonly tokenService: TokenService,
     private readonly config: ConfigService,
   ) {}
@@ -24,42 +28,49 @@ export class AuthService {
   async registerUser(input: CreateUserInput): Promise<void> {
     const { username, email, password, name, marketingConsent } = input;
 
-    const existingUser = await this.userModel.findOne({
-      $or: [{ username }, { email }],
-    });
+    const existingUserByUsername = await this.userRepository.findOne({ username });
 
-    if (existingUser?.username === username) {
+    if (existingUserByUsername) {
       throw new UsernameAlreadyExistsException();
     }
 
-    if (existingUser?.email === email) {
+    const existingUserByEmail = await this.userRepository.findOne({ email });
+
+    if (existingUserByEmail) {
       throw new EmailAlreadyExistsException();
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = new this.userModel({
+    const user = this.userRepository.create({
       username,
       email,
       password: hashedPassword,
       name,
-      marketingConsent,
-      socialAccounts: [
-        {
-          provider: 'local',
-          providerId: username,
-        },
-      ],
-      termsAgreed: true,
+      marketingConsent: marketingConsent ?? false,
+      role: 'user',
+      profileIcon:
+        'https://static.vecteezy.com/system/resources/thumbnails/002/318/271/small/user-profile-icon-free-vector.jpg',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
-    await user.save();
+    await this.userRepository.getEntityManager().persistAndFlush(user);
+
+    const socialAccount = this.socialAccountRepository.create({
+      user,
+      provider: 'local',
+      providerId: username,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await this.socialAccountRepository.getEntityManager().persistAndFlush(socialAccount);
   }
 
   async loginUser(input: LoginUserInput): Promise<TokenPair> {
     const { username, password, rememberMe } = input;
 
-    const user = await this.userModel.findOne({ username });
+    const user = await this.userRepository.findOne({ username });
     const isPasswordValid = user?.password ? await bcrypt.compare(password, user.password) : false;
 
     if (!user || !isPasswordValid) {
@@ -67,7 +78,7 @@ export class AuthService {
     }
 
     const payload: AccessTokenPayload = {
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
     };
@@ -82,7 +93,7 @@ export class AuthService {
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
     const { id, rememberMe } = await this.tokenService.verifyRefreshToken(refreshToken);
 
-    const user = await this.userModel.findById(id);
+    const user = await this.userRepository.findOne(id);
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const key = `refreshToken:${id}`;
@@ -99,7 +110,7 @@ export class AuthService {
     const ttlToUse = currentTtl < threshold ? maxTtl : currentTtl;
 
     const payload: AccessTokenPayload = {
-      id: user._id.toString(),
+      id: user.id,
       email: user.email,
       role: user.role,
     };

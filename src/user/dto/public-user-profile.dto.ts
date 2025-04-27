@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEmail, IsNumber, IsString } from 'class-validator';
 
 import { UserRole } from '@/types/user.types';
 
@@ -16,9 +17,10 @@ export class PublicUserProfileDto {
   @IsString()
   profileIcon: string;
 
-  @ApiProperty({ description: '사용자 ID', example: 'johndoe123' })
-  @IsString()
-  userId: string;
+  @ApiProperty({ description: '사용자 고유 번호 (PK)', example: 123456789 })
+  @Type(() => Number)
+  @IsNumber()
+  id: number;
 
   @ApiProperty({ description: 'role 속성, user와 admin이 있습니다.', example: 'user' })
   @IsString()
