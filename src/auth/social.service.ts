@@ -67,7 +67,10 @@ export class SocialService {
   }
 
   async unlinkSocialAccount(id: number, provider: 'google' | 'kakao' | 'naver'): Promise<void> {
-    const user = await this.userRepository.findOne(id);
+    const user = await this.userRepository.findOne(id, {
+      fields: ['id'],
+    });
+
     if (!user) {
       throw new UserNotFoundException();
     }

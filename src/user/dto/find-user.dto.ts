@@ -1,9 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsIn, IsString } from 'class-validator';
+import { IsBoolean, IsIn, IsString, MinLength } from 'class-validator';
 
 export class FindUserDto {
   @ApiProperty({ description: '찾고자 하는 입력 데이터', example: 'johndoe123' })
   @IsString()
+  @MinLength(6, { message: '최소 6자 이상 입력해주세요.' })
   input: string;
 
   @ApiProperty({

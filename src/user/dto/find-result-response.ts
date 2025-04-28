@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class FindUserResultDto {
   @ApiProperty({
@@ -23,6 +23,7 @@ export class FindUserResultDto {
   })
   @IsOptional()
   @IsString()
+  @MinLength(6, { message: '최소 6자 이상 입력해주세요.' })
   username?: string;
 
   @ApiProperty({

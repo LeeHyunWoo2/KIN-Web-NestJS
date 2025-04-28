@@ -3,6 +3,7 @@ import { EntityRepository } from '@mikro-orm/postgresql';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { Redis } from 'ioredis';
+import { assoc, mergeRight, pick, prop } from 'ramda';
 
 import { TokenService } from '@/auth/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
@@ -38,7 +39,9 @@ export class UserService {
     const cached = await this.redisClient.get(cacheKey);
     if (cached) return JSON.parse(cached) as PublicUserProfile;
 
-    const user = await this.userRepository.findOne(id);
+    const user = await this.userRepository.findOne(id, {
+      fields: ['name', 'email', 'profileIcon', 'id', 'role'],
+    });
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const profile: PublicUserProfile = {
@@ -80,24 +83,30 @@ export class UserService {
   ): Promise<FindUserQueryData> {
     const { input, inputType, fetchUsername } = query;
 
-    const user = await this.userRepository.findOne({ [inputType]: input });
+    const user = await this.userRepository.findOne(
+      { [inputType]: input },
+      { fields: ['id', 'username', 'email'] },
+    );
 
-    if (!user) {
-      return { signal: 'user_not_found' };
-    }
+    if (!user) return { signal: 'user_not_found' };
 
     const hasLocalAccount = await this.socialAccountRepository.findOne({
       user,
       provider: 'local',
     });
 
-    const accountType: 'Local' | 'SNS' = hasLocalAccount ? 'Local' : 'SNS';
+    const accountType = hasLocalAccount ? 'Local' : 'SNS';
 
-    return {
+    const base: FindUserQueryData = {
       signal: 'user_found',
       accountType,
-      ...(fetchUsername ? { username: user.username } : { email: user.email }),
     };
+
+    const additionalField = fetchUsername
+      ? assoc('username', prop('username', user), {})
+      : assoc('email', prop('email', user), {});
+
+    return { ...base, ...additionalField };
   }
 
   @CatchAndLog()
@@ -127,7 +136,10 @@ export class UserService {
   async updateUser(id: number, data: UpdateUserProfileData): Promise<Partial<PublicUserProfile>> {
     this.ensureNotTestAccount(id);
 
-    const user = await this.userRepository.findOne(id);
+    const user = await this.userRepository.findOne(id, {
+      fields: ['id', 'name', 'email', 'profileIcon'],
+    });
+
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     if (data.name) user.name = data.name;
@@ -139,17 +151,16 @@ export class UserService {
     const cached = await this.redisClient.get(cacheKey);
     const ttl = await this.redisClient.ttl(cacheKey);
 
+    const pickedData = pick(['name', 'profileIcon'], data);
+
     const updatedProfile = cached
-      ? {
-          ...(JSON.parse(cached) as PublicUserProfile),
-          name: data.name || (JSON.parse(cached) as PublicUserProfile).name,
-          profileIcon: data.profileIcon || (JSON.parse(cached) as PublicUserProfile).profileIcon,
-        }
+      ? mergeRight(JSON.parse(cached) as PublicUserProfile, pickedData)
       : {
           name: user.name,
           email: user.email,
           profileIcon: user.profileIcon,
         };
+
     await this.redisClient.set(cacheKey, JSON.stringify(updatedProfile));
     if (ttl > 0) await this.redisClient.expire(cacheKey, ttl);
     return updatedProfile;
@@ -157,7 +168,11 @@ export class UserService {
 
   @CatchAndLog()
   async resetPassword(email: string, newPassword: string): Promise<void> {
-    const user = await this.userRepository.findOne({ email });
+    const user = await this.userRepository.findOne(
+      { email },
+      { fields: ['id', 'email', 'password', 'passwordHistory'] },
+    );
+
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password || '');
@@ -190,6 +205,7 @@ export class UserService {
     password: string,
   ): Promise<void> {
     const user = await this.userRepository.findOne(id);
+
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const hasLocalAccount = await this.socialAccountRepository.findOne({
@@ -270,7 +286,10 @@ export class UserService {
       await this.tokenService.invalidateAccessToken(accessToken);
     }
 
-    const user = await this.userRepository.findOne(id);
+    const user = await this.userRepository.findOne(id, {
+      fields: ['id'],
+    });
+
     if (user) {
       await this.userRepository.getEntityManager().removeAndFlush(user);
     }

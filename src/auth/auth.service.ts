@@ -28,16 +28,17 @@ export class AuthService {
   async registerUser(input: CreateUserInput): Promise<void> {
     const { username, email, password, name, marketingConsent } = input;
 
-    const existingUserByUsername = await this.userRepository.findOne({ username });
+    const existingUser = await this.userRepository.findOne({
+      $or: [{ username }, { email }],
+    });
 
-    if (existingUserByUsername) {
-      throw new UsernameAlreadyExistsException();
-    }
-
-    const existingUserByEmail = await this.userRepository.findOne({ email });
-
-    if (existingUserByEmail) {
-      throw new EmailAlreadyExistsException();
+    if (existingUser) {
+      if (existingUser.username === username) {
+        throw new UsernameAlreadyExistsException();
+      }
+      if (existingUser.email === email) {
+        throw new EmailAlreadyExistsException();
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -70,7 +71,11 @@ export class AuthService {
   async loginUser(input: LoginUserInput): Promise<TokenPair> {
     const { username, password, rememberMe } = input;
 
-    const user = await this.userRepository.findOne({ username });
+    const user = await this.userRepository.findOne(
+      { username },
+      { fields: ['id', 'email', 'password', 'role'] },
+    );
+
     const isPasswordValid = user?.password ? await bcrypt.compare(password, user.password) : false;
 
     if (!user || !isPasswordValid) {
@@ -93,7 +98,10 @@ export class AuthService {
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
     const { id, rememberMe } = await this.tokenService.verifyRefreshToken(refreshToken);
 
-    const user = await this.userRepository.findOne(id);
+    const user = await this.userRepository.findOne(id, {
+      fields: ['id', 'email', 'role'],
+    });
+
     if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
 
     const key = `refreshToken:${id}`;
