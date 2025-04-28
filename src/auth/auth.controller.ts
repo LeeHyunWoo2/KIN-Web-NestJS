@@ -74,8 +74,6 @@ export class AuthController {
       example: {},
     },
   })
-
-  // 예외가 발생해도 무시하고 쿠키 삭제만 진행
   async logout(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
