@@ -4,8 +4,10 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { FastifyServerOptions } from 'fastify';
+import { Logger } from 'nestjs-pino';
 
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
+import { setLogger } from '@/common/log-error';
 import { globalConfigService } from '@/config/global-config.service';
 
 import { AppModule } from './app.module';
@@ -24,15 +26,15 @@ async function bootstrap(): Promise<void> {
 
   await app.register(cookie);
 
-  const options = new DocumentBuilder()
+  const config = new DocumentBuilder()
     .setTitle('Keep Idea Note API')
     .setDescription('Auth, Notes, User, Visitor 등 API 문서')
     .setVersion('1.0')
     .addCookieAuth('accessToken')
     .build();
 
-  const document = SwaggerModule.createDocument(app, options);
-  SwaggerModule.setup('docs', app, document);
+  const documentFactory = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, documentFactory);
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.enableCors({
@@ -42,7 +44,10 @@ async function bootstrap(): Promise<void> {
 
   const port = configService.get<number>('app.port') ?? 5000;
   await app.listen(port);
-  console.log(`Server is running on: ${await app.getUrl()}`);
+
+  const logger = app.get(Logger);
+  setLogger(logger);
+  logger.log(`Server is running on: ${await app.getUrl()}`, 'Bootstrap');
 }
 
 void bootstrap();

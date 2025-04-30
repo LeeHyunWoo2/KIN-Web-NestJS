@@ -1,8 +1,12 @@
+import { MikroOrmModule } from '@mikro-orm/nestjs';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 
 import { RedisProvider } from '@/config/redis.provider.config';
+import { SocialAccount } from '@/user/entity/social-account.entity';
+import { User } from '@/user/entity/user.entity';
+import { UserService } from '@/user/user.service';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -21,6 +25,7 @@ import { TokenService } from './token.service';
 @Module({
   imports: [
     ConfigModule,
+    MikroOrmModule.forFeature([User, SocialAccount]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -38,6 +43,7 @@ import { TokenService } from './token.service';
     EmailService,
     SocialService,
     TokenService,
+    UserService,
     RedisProvider,
     GoogleStrategy,
     KakaoStrategy,

@@ -2,26 +2,34 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/co
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { logError } from '@/common/log-error';
+import { LoggableError } from '@/common/types/loggable-error';
 
-@Catch(HttpException)
+@Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost): void {
+  catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const req = ctx.getRequest<FastifyRequest>();
     const res = ctx.getResponse<FastifyReply>();
 
-    const status = exception.getStatus();
+    const err = exception as LoggableError;
+    const status = exception instanceof HttpException ? exception.getStatus() : 500;
 
-    const message = exception.message;
+    logError(err, req);
 
-    logError(exception, req);
+    const response =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : { code: 'INTERNAL_SERVER_ERROR', message: err.message || 'Unhandled error' };
 
-    res.status(status);
-    res.send({
-      status,
-      message,
-      timestamp: new Date().toISOString(),
-      path: req.url,
-    });
+    const errorResponse =
+      typeof response === 'string'
+        ? { code: 'SERVER_ERROR', message: response }
+        : {
+            code: response['code'] ?? 'SERVER_ERROR',
+            message: response['message'] ?? 'Unexpected error',
+            details: Object.keys(response).length > 2 ? response : undefined,
+          };
+
+    res.status(status).send(errorResponse);
   }
 }

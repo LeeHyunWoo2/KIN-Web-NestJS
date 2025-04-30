@@ -3,9 +3,9 @@ import { PostgreSqlDriver } from '@mikro-orm/postgresql';
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AopModule } from '@toss/nestjs-aop';
+import { LoggerModule } from 'nestjs-pino';
 
 import { CommonAopModule } from '@/common/aop/aop.module';
-import { User } from '@/user/entity/user.entity';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -30,7 +30,26 @@ import { UserModule } from './user/user.module';
         user: config.getOrThrow('postgres.user'),
         password: config.getOrThrow('postgres.password'),
         autoLoadEntities: true,
-        entities: [User],
+      }),
+    }),
+    LoggerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        pinoHttp: {
+          autoLogging: false,
+          level: configService.get<string>('app.nodeEnv') === 'production' ? 'info' : 'debug',
+          transport:
+            configService.get<string>('app.nodeEnv') !== 'production'
+              ? {
+                  target: 'pino-pretty',
+                  options: {
+                    colorize: true,
+                    translateTime: 'SYS:standard',
+                    ignore: 'pid,hostname',
+                  },
+                }
+              : undefined,
+        },
       }),
     }),
     AuthModule,

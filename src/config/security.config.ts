@@ -1,7 +1,7 @@
 import { registerAs } from '@nestjs/config';
 import fs from 'fs';
 
-export default registerAs('security', () => {
+export const securityConfig = registerAs('security', () => {
   const isProduction = process.env.NODE_ENV === 'production';
 
   return {

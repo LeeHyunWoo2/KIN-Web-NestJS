@@ -3,19 +3,17 @@ import { ConfigModule as NestConfigModule } from '@nestjs/config';
 
 import postgresConfig from '@/config/postgres.config';
 
-import appConfig from './app.config';
-import authConfig from './auth.config';
-import mailConfig from './mail.config';
-import oauthConfig from './oauth.config';
-import redisConfig from './redis.config';
-import securityConfig from './security.config';
-import validationSchema from './validation';
+import { appConfig } from './app.config';
+import { authConfig } from './auth.config';
+import { mailConfig } from './mail.config';
+import { oauthConfig } from './oauth.config';
+import { redisConfig } from './redis.config';
+import { securityConfig } from './security.config';
 
 @Module({
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      validationSchema,
       load: [
         appConfig,
         authConfig,

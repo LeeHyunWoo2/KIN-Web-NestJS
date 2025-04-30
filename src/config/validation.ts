@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-export default Joi.object({
+export const validationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
 
   PORT: Joi.number().default(5000),

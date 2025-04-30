@@ -24,11 +24,11 @@ import { User } from './entity/user.entity';
 @Injectable()
 export class UserService {
   constructor(
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
     @InjectRepository(User)
     private readonly userRepository: EntityRepository<User>,
     @InjectRepository(SocialAccount)
     private readonly socialAccountRepository: EntityRepository<SocialAccount>,
-    @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
     private readonly tokenService: TokenService,
   ) {}
 
