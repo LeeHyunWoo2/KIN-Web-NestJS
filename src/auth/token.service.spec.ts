@@ -1,7 +1,14 @@
 import { InvalidEmailTokenException } from '@/common/exceptions/auth.exceptions';
 import {
+  AccessTokenBlacklistedException,
+  AccessTokenInvalidException,
+  AccessTokenMissingException,
+  NoLinkedAccountException,
+  OAuthTokenGenerationFailedException,
   RefreshTokenInvalidException,
   RefreshTokenMismatchException,
+  RefreshTokenNotFoundException,
+  SaveRefreshTokenException,
 } from '@/common/exceptions/token.exceptions';
 import { AccessTokenPayload, SocialTokenUser } from '@/types/user.types';
 
@@ -70,7 +77,7 @@ describe('TokenService', () => {
         },
       });
       await expect(tokenService.verifyAccessToken(accessToken)).rejects.toThrow(
-        'Access token is blacklisted',
+        AccessTokenBlacklistedException,
       );
       expect(redis.get).toHaveBeenCalledWith(`blacklist:${accessToken}`);
     });
@@ -85,7 +92,7 @@ describe('TokenService', () => {
       });
 
       await expect(tokenService.verifyAccessToken('test-token')).rejects.toThrow(
-        'Access token is invalid',
+        AccessTokenInvalidException,
       );
       expect(redis.get).toHaveBeenCalledWith('blacklist:test-token');
       expect(jwt.verifyAsync).toHaveBeenCalledWith('test-token', {
@@ -96,7 +103,7 @@ describe('TokenService', () => {
     it('토큰이 없을 경우 예외를 던져야 합니다', async () => {
       const { tokenService } = await setupTokenServiceTest({});
 
-      await expect(tokenService.verifyAccessToken('')).rejects.toThrow('Access token is required');
+      await expect(tokenService.verifyAccessToken('')).rejects.toThrow(AccessTokenMissingException);
     });
   });
 
@@ -163,7 +170,7 @@ describe('TokenService', () => {
         },
       });
       await expect(tokenService.verifyRefreshToken(refreshToken)).rejects.toThrow(
-        '다시 로그인해주세요.',
+        RefreshTokenNotFoundException,
       );
     });
   });
@@ -221,7 +228,7 @@ describe('TokenService', () => {
           user: { socialAccounts: [] },
           provider: 'google',
         }),
-      ).rejects.toThrow('No linked account');
+      ).rejects.toThrow(NoLinkedAccountException);
     });
     it('provider가 google인 경우 accessToken 을 정상적으로 반환해야 합니다.', async () => {
       jest.mock('axios', () => ({
@@ -306,7 +313,7 @@ describe('TokenService', () => {
           provider: 'google',
           user: mockSocialAccount,
         }),
-      ).rejects.toThrow('OAuth token generation failed');
+      ).rejects.toThrow(OAuthTokenGenerationFailedException);
     });
   });
 
@@ -337,7 +344,7 @@ describe('TokenService', () => {
       });
       await expect(
         tokenService.saveRefreshTokenToRedis(123456, 'token', 3600, true),
-      ).rejects.toThrow('문제가 발생했습니다. 다시 시도해주세요');
+      ).rejects.toThrow(SaveRefreshTokenException);
     });
   });
 

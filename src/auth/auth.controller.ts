@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Post,
-  Req,
-  Res,
-  UnauthorizedException,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
@@ -18,7 +8,9 @@ import { LoginDto } from '@/auth/dto/login.dto';
 import { RegisterDto } from '@/auth/dto/register.dto';
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
+import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
+import { RefreshTokenMissingException } from '@/common/exceptions/token.exceptions';
 import { CreateUserInput, DecodedUser, LoginUserInput, TokenPair } from '@/types/user.types';
 
 @ApiTags('Auth')
@@ -32,6 +24,7 @@ export class AuthController {
   @Post('register')
   @HttpCode(201)
   @ApiOperation({ summary: '회원가입 (로컬)' })
+  @CatchAndLog()
   async register(@Body() dto: RegisterDto): Promise<void> {
     const input: CreateUserInput = {
       username: dto.username,
@@ -55,6 +48,7 @@ export class AuthController {
       },
     },
   })
+  @CatchAndLog()
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -74,6 +68,7 @@ export class AuthController {
       example: {},
     },
   })
+  @CatchAndLog()
   async logout(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -101,13 +96,14 @@ export class AuthController {
   @Post('refresh')
   @ApiOperation({ summary: 'AccessToken 재발급' })
   @ApiResponse({ status: 200, description: '리프레시 토큰을 통해 새 AccessToken 발급' })
+  @CatchAndLog()
   async refresh(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is missing');
+      throw new RefreshTokenMissingException();
     }
 
     const tokens = await this.authService.refreshTokens(refreshToken);

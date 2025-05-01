@@ -1,7 +1,14 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  HttpException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 
 import { TokenService } from '@/auth/token.service';
+import { AccessTokenMissingException } from '@/common/exceptions/token.exceptions';
 
 @Injectable()
 export class AccessGuard implements CanActivate {
@@ -12,15 +19,17 @@ export class AccessGuard implements CanActivate {
     const token = request.cookies?.accessToken;
 
     if (!token) {
-      throw new UnauthorizedException('Access token is missing');
+      throw new AccessTokenMissingException();
     }
 
     try {
       request.user = await this.tokenService.verifyAccessToken(token);
       return true;
     } catch (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      throw new UnauthorizedException(`Access denied. ${error?.message ?? 'Invalid token'}`);
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new UnauthorizedException('접근이 거부되었습니다.');
     }
   }
 }

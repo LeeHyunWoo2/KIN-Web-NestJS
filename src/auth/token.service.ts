@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Redis } from 'ioredis';
@@ -7,6 +7,11 @@ import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import { InvalidEmailTokenException } from '@/common/exceptions/auth.exceptions';
 import {
+  AccessTokenBlacklistedException,
+  AccessTokenInvalidException,
+  AccessTokenMissingException,
+  NoLinkedAccountException,
+  OAuthTokenGenerationFailedException,
   RefreshTokenInvalidException,
   RefreshTokenMismatchException,
   RefreshTokenNotFoundException,
@@ -58,12 +63,12 @@ export class TokenService {
   @LogExecutionTime()
   async verifyAccessToken(accessToken: string): Promise<AccessTokenPayload> {
     if (!accessToken) {
-      throw new UnauthorizedException('Access token is required');
+      throw new AccessTokenMissingException();
     }
 
     const isBlacklisted = await this.redisClient.get(`blacklist:${accessToken}`);
     if (isBlacklisted) {
-      throw new UnauthorizedException('Access token is blacklisted');
+      throw new AccessTokenBlacklistedException();
     }
 
     try {
@@ -72,7 +77,7 @@ export class TokenService {
         algorithms: ['HS256'],
       });
     } catch {
-      throw new UnauthorizedException('Access token is invalid');
+      throw new AccessTokenInvalidException();
     }
   }
 
@@ -115,7 +120,7 @@ export class TokenService {
     const { user, provider } = data;
     const axios = (await import('axios')).default;
     const account = user.socialAccounts.find((a) => a.provider === provider);
-    if (!account) throw new UnauthorizedException('No linked account');
+    if (!account) throw new NoLinkedAccountException();
 
     try {
       if (provider === 'google') {
@@ -146,7 +151,7 @@ export class TokenService {
       const res = await axios.post<{ access_token: string }>(url, null, { params });
       return res.data.access_token;
     } catch {
-      throw new UnauthorizedException('OAuth token generation failed');
+      throw new OAuthTokenGenerationFailedException();
     }
   }
 
@@ -182,7 +187,6 @@ export class TokenService {
     await this.redisClient.del(`publicProfile:${id}`);
   }
 
-  @CatchAndLog()
   @LogExecutionTime()
   generateEmailVerificationToken(email: string): string {
     return this.jwtService.sign({ email }, { expiresIn: '10m', secret: this.accessTokenSecret });

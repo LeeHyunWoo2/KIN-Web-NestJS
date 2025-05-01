@@ -1,6 +1,6 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/postgresql';
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { Redis } from 'ioredis';
 import { assoc, mergeRight, pick, prop } from 'ramda';
@@ -8,6 +8,13 @@ import { assoc, mergeRight, pick, prop } from 'ramda';
 import { TokenService } from '@/auth/token.service';
 import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
+import {
+  AlreadyHasLocalAccountException,
+  PasswordReusedException,
+  SamePasswordUsedException,
+  TestAccountMutationException,
+  UserNotFoundException,
+} from '@/common/exceptions/user.exceptions';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 import {
   AccessTokenPayload,
@@ -42,7 +49,7 @@ export class UserService {
     const user = await this.userRepository.findOne(id, {
       fields: ['name', 'email', 'profileIcon', 'id', 'role'],
     });
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user) throw new UserNotFoundException();
 
     const profile: PublicUserProfile = {
       name: user.name,
@@ -73,11 +80,10 @@ export class UserService {
       ],
       populate: ['socialAccounts'],
     });
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user) throw new UserNotFoundException();
     return user;
   }
 
-  @CatchAndLog()
   async findUserByInput(
     query: FindUserQuery & { fetchUsername: boolean },
   ): Promise<FindUserQueryData> {
@@ -140,7 +146,7 @@ export class UserService {
       fields: ['id', 'name', 'email', 'profileIcon'],
     });
 
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user) throw new UserNotFoundException();
 
     if (data.name) user.name = data.name;
     if (data.profileIcon) user.profileIcon = data.profileIcon;
@@ -173,18 +179,17 @@ export class UserService {
       { fields: ['id', 'email', 'password', 'passwordHistory'] },
     );
 
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user) throw new UserNotFoundException();
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password || '');
-    if (isSamePassword)
-      throw new HttpException('현재 비밀번호와 다르게 설정해주세요.', HttpStatus.BAD_REQUEST);
+    if (isSamePassword) throw new SamePasswordUsedException();
 
     const reusedPassword = (user.passwordHistory || []).find((record) =>
       bcrypt.compareSync(newPassword, record.password),
     );
     if (reusedPassword) {
       const timeDifference = this.calculateDateDifference(reusedPassword.changedAt);
-      throw new HttpException(`${timeDifference}에 사용된 비밀번호입니다.`, HttpStatus.BAD_REQUEST);
+      throw new PasswordReusedException(`${timeDifference}에 사용된 비밀번호입니다.`);
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -206,7 +211,7 @@ export class UserService {
   ): Promise<void> {
     const user = await this.userRepository.findOne(id);
 
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user) throw new UserNotFoundException();
 
     const hasLocalAccount = await this.socialAccountRepository.findOne({
       user,
@@ -214,7 +219,7 @@ export class UserService {
     });
 
     if (hasLocalAccount) {
-      throw new HttpException('이미 로컬 계정이 존재합니다.', HttpStatus.BAD_REQUEST);
+      throw new AlreadyHasLocalAccountException();
     }
 
     user.username = username;
@@ -297,10 +302,9 @@ export class UserService {
 
   @CatchAndLog()
   private ensureNotTestAccount(id: number): void {
-    // const testAccounts = ['672ae1ad9595d29f7bfbf34a', '672ae28b9595d29f7bfbf353'];
     const testAccounts = [123456789, 987654321];
     if (testAccounts.includes(id)) {
-      throw new HttpException('테스트 계정은 변경할 수 없습니다.', HttpStatus.I_AM_A_TEAPOT);
+      throw new TestAccountMutationException();
     }
   }
 

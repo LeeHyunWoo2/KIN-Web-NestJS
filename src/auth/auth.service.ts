@@ -1,15 +1,17 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/postgresql';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 
 import { TokenService } from '@/auth/token.service';
+import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import {
   EmailAlreadyExistsException,
   InvalidCredentialsException,
   UsernameAlreadyExistsException,
 } from '@/common/exceptions/auth.exceptions';
+import { UserNotFoundException } from '@/common/exceptions/user.exceptions';
 import { AccessTokenPayload, CreateUserInput, LoginUserInput, TokenPair } from '@/types/user.types';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
@@ -25,6 +27,7 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
+  @CatchAndLog()
   async registerUser(input: CreateUserInput): Promise<void> {
     const { username, email, password, name, marketingConsent } = input;
 
@@ -68,6 +71,7 @@ export class AuthService {
     await this.socialAccountRepository.getEntityManager().persistAndFlush(socialAccount);
   }
 
+  @CatchAndLog()
   async loginUser(input: LoginUserInput): Promise<TokenPair> {
     const { username, password, rememberMe } = input;
 
@@ -95,6 +99,7 @@ export class AuthService {
     return this.tokenService.generateTokens(payload, ttl);
   }
 
+  @CatchAndLog()
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
     const { id, rememberMe } = await this.tokenService.verifyRefreshToken(refreshToken);
 
@@ -102,7 +107,7 @@ export class AuthService {
       fields: ['id', 'email', 'role'],
     });
 
-    if (!user) throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+    if (!user) throw new UserNotFoundException();
 
     const key = `refreshToken:${id}`;
     const currentTtl = await this.tokenService.getRemainingTtl(key);

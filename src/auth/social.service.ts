@@ -6,6 +6,7 @@ import { FastifyReply } from 'fastify';
 
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
+import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import {
   NoRemainingAuthMethodException,
@@ -66,6 +67,7 @@ export class SocialService {
     await reply.redirect(target);
   }
 
+  @CatchAndLog()
   async unlinkSocialAccount(id: number, provider: 'google' | 'kakao' | 'naver'): Promise<void> {
     const user = await this.userRepository.findOne(id, {
       fields: ['id'],

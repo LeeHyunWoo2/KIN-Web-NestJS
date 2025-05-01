@@ -7,6 +7,8 @@ import { FastifyRequest } from 'fastify';
 import { Profile, Strategy } from 'passport-google-oauth20';
 
 import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
+import { AccessTokenMissingException } from '@/common/exceptions/token.exceptions';
+import { UserNotFoundException } from '@/common/exceptions/user.exceptions';
 import { AccessTokenPayload } from '@/types/user.types';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
@@ -36,12 +38,12 @@ export class GoogleLinkStrategy extends PassportStrategy(Strategy, 'google-link'
   ): Promise<AccessTokenPayload> {
     const id = (req.user as AccessTokenPayload)?.id;
     if (!id) {
-      throw new Error('로그인된 사용자만 소셜 연동이 가능합니다.');
+      throw new AccessTokenMissingException();
     }
 
     const user = await this.userRepository.findOne(id);
     if (!user) {
-      throw new Error('사용자를 찾을 수 없습니다.');
+      throw new UserNotFoundException();
     }
 
     const providerId = profile.id;
