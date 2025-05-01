@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { FastifyRequest } from 'fastify';
@@ -30,6 +30,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ): Promise<AccessTokenPayload> {
     const providerId = profile.id;
 
+    if (!profile.emails?.[0]?.value) {
+      throw new InternalServerErrorException('소셜 계정에서 이메일을 받을 수 없습니다.');
+    }
+
     const existingUser = await this.userService.findUserBySocialAccount('google', providerId);
     if (existingUser) {
       return existingUser;
@@ -38,7 +42,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     return await this.userService.createSocialUser({
       provider: 'google',
       providerId,
-      email: profile.emails?.[0]?.value,
+      email: profile.emails[0].value,
       name: profile.displayName,
       profileIcon: profile.photos?.[0].value,
       socialRefreshToken: refreshToken,

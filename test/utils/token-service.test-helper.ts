@@ -5,9 +5,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TokenService } from '@/auth/token.service';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 
-import { createMockConfigService, MockConfigService } from './mock-config';
-import { createMockJwtService, MockJwtService } from './mock-jwt';
-import { createMockRedis, MockRedis } from './mock-redis';
+import { createMockConfigService, MockConfigService } from './config.mock';
+import { createMockJwtService, MockJwtService } from './jwt.mock';
+import { createMockRedis, MockRedis } from './redis.mock';
 
 interface SetupOptions {
   redis?: Partial<MockRedis>;

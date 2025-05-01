@@ -181,10 +181,10 @@ export class UserService {
 
     if (!user) throw new UserNotFoundException();
 
-    const isSamePassword = await bcrypt.compare(newPassword, user.password || '');
+    const isSamePassword = await bcrypt.compare(newPassword, <string>user.password);
     if (isSamePassword) throw new SamePasswordUsedException();
 
-    const reusedPassword = (user.passwordHistory || []).find((record) =>
+    const reusedPassword = user.passwordHistory.find((record) =>
       bcrypt.compareSync(newPassword, record.password),
     );
     if (reusedPassword) {
@@ -195,7 +195,7 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     user.password = hashedPassword;
-    user.passwordHistory = (user.passwordHistory || [])
+    user.passwordHistory = user.passwordHistory
       .slice(-4)
       .concat({ password: hashedPassword, changedAt: new Date() });
 
@@ -242,13 +242,13 @@ export class UserService {
   async createSocialUser(input: {
     provider: 'google' | 'kakao' | 'naver';
     providerId: string;
-    email?: string;
+    email: string;
     name: string;
     profileIcon?: string;
     socialRefreshToken?: string;
   }): Promise<AccessTokenPayload> {
     const user = this.userRepository.create({
-      email: input.email ?? '',
+      email: input.email,
       name: input.name,
       role: 'user',
       profileIcon:
@@ -257,6 +257,7 @@ export class UserService {
       marketingConsent: false,
       createdAt: new Date(),
       updatedAt: new Date(),
+      passwordHistory: [],
     });
 
     await this.userRepository.getEntityManager().persistAndFlush(user);
@@ -310,7 +311,7 @@ export class UserService {
 
   private calculateDateDifference(pastDate: Date): string {
     const now = new Date();
-    const diffInMs = now.getDate() - pastDate.getTime();
+    const diffInMs = now.getTime() - pastDate.getTime();
 
     const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
     const diffInWeeks = Math.floor(diffInDays / 7);

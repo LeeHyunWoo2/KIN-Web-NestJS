@@ -6,6 +6,15 @@ import {
 
 import { ExceptionCode } from '@/common/constants/exception-code.enum';
 
+export class AccessTokenMissingException extends UnauthorizedException {
+  constructor() {
+    super({
+      message: '로그인이 필요합니다.',
+      code: ExceptionCode.ACCESS_TOKEN_MISSING,
+    });
+  }
+}
+
 export class InvalidCredentialsException extends UnauthorizedException {
   constructor() {
     super({

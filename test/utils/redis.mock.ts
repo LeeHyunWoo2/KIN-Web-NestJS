@@ -3,6 +3,7 @@ export interface MockRedis {
   set: jest.Mock;
   del: jest.Mock;
   ttl: jest.Mock;
+  expire: jest.Mock;
 }
 
 export const createMockRedis = (): MockRedis => ({
@@ -10,4 +11,5 @@ export const createMockRedis = (): MockRedis => ({
   set: jest.fn(),
   del: jest.fn(),
   ttl: jest.fn(),
+  expire: jest.fn(),
 });

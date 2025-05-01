@@ -57,6 +57,7 @@ export class AuthService {
         'https://static.vecteezy.com/system/resources/thumbnails/002/318/271/small/user-profile-icon-free-vector.jpg',
       createdAt: new Date(),
       updatedAt: new Date(),
+      passwordHistory: [],
     });
 
     await this.userRepository.getEntityManager().persistAndFlush(user);

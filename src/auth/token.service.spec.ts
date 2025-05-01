@@ -12,7 +12,7 @@ import {
 } from '@/common/exceptions/token.exceptions';
 import { AccessTokenPayload, SocialTokenUser } from '@/types/user.types';
 
-import { setupTokenServiceTest } from '../../test/utils/setup-token-service.module';
+import { setupTokenServiceTest } from '../../test/utils/token-service.test-helper';
 
 describe('TokenService', () => {
   describe('generateTokens', () => {
@@ -56,7 +56,7 @@ describe('TokenService', () => {
 
       const { tokenService, redis, jwt } = await setupTokenServiceTest({
         redis: {
-          get: jest.fn().mockResolvedValue(null), // 블랙리스트 아님
+          get: jest.fn().mockResolvedValue(null),
         },
         jwt: {
           verifyAsync: jest.fn().mockResolvedValue(payload),
@@ -70,7 +70,7 @@ describe('TokenService', () => {
         algorithms: ['HS256'],
       });
     });
-    it('토큰이 블랙리스트일 경우, 예외를 던져야 합니다.', async () => {
+    it('토큰이 블랙리스트일 경우, AccessTokenBlacklistedException 을 던져야 합니다.', async () => {
       const { tokenService, redis } = await setupTokenServiceTest({
         redis: {
           get: jest.fn().mockResolvedValue('true'),
@@ -81,7 +81,7 @@ describe('TokenService', () => {
       );
       expect(redis.get).toHaveBeenCalledWith(`blacklist:${accessToken}`);
     });
-    it('토큰이 유효하지 않을 경우, 예외를 던져야 합니다.', async () => {
+    it('토큰이 유효하지 않을 경우, AccessTokenInvalidException 을 던져야 합니다.', async () => {
       const { tokenService, redis, jwt } = await setupTokenServiceTest({
         redis: {
           get: jest.fn().mockResolvedValue(null),
@@ -100,7 +100,7 @@ describe('TokenService', () => {
         algorithms: ['HS256'],
       });
     });
-    it('토큰이 없을 경우 예외를 던져야 합니다', async () => {
+    it('토큰이 없을 경우 AccessTokenMissingException 을 던져야 합니다', async () => {
       const { tokenService } = await setupTokenServiceTest({});
 
       await expect(tokenService.verifyAccessToken('')).rejects.toThrow(AccessTokenMissingException);
@@ -129,7 +129,7 @@ describe('TokenService', () => {
       });
       expect(redis.get).toHaveBeenCalledWith('refreshToken:123456');
     });
-    it('JWT 토큰 파싱에 실패하면 RefreshTokenInvalidException 커스텀 에러를 던져야 합니다.', async () => {
+    it('JWT 토큰 파싱에 실패하면 RefreshTokenInvalidException 을 던져야 합니다.', async () => {
       const refreshToken = 'invalid-refresh-token';
 
       const { tokenService } = await setupTokenServiceTest({
@@ -138,10 +138,10 @@ describe('TokenService', () => {
         },
       });
       await expect(tokenService.verifyRefreshToken(refreshToken)).rejects.toThrow(
-        new RefreshTokenInvalidException(),
+        RefreshTokenInvalidException,
       );
     });
-    it('저장된 refreshToken과 일치하지 않으면 RefreshTokenMismatchException 를 던져야 합니다.', async () => {
+    it('저장된 refreshToken과 일치하지 않으면 RefreshTokenMismatchException 을 던져야 합니다.', async () => {
       const refreshToken = 'different-refresh-token';
       const decoded = { id: 123456 };
       const stored = JSON.stringify({ token: 'valid-refresh-token', rememberMe: true });
@@ -154,10 +154,10 @@ describe('TokenService', () => {
         },
       });
       await expect(tokenService.verifyRefreshToken(refreshToken)).rejects.toThrow(
-        new RefreshTokenMismatchException(),
+        RefreshTokenMismatchException,
       );
     });
-    it('저장된 refreshToken이 없으면 예외를 던져야 합니다.', async () => {
+    it('저장된 refreshToken이 없으면 RefreshTokenNotFoundException 을 던져야 합니다.', async () => {
       const refreshToken = 'missing-refresh-token';
       const decoded = { id: 123456 };
 
@@ -193,7 +193,7 @@ describe('TokenService', () => {
         },
       });
       await expect(tokenService.getRemainingTtl('refreshToken:123456')).rejects.toThrow(
-        new RefreshTokenInvalidException(),
+        RefreshTokenInvalidException,
       );
     });
   });
@@ -219,9 +219,9 @@ describe('TokenService', () => {
       ],
     };
     beforeEach(() => {
-      jest.resetModules(); // axios 가 동적 import를 하기 때문에 필요함
+      jest.resetModules();
     });
-    it('소셜 계정이 없으면 예외를 던져야 합니다.', async () => {
+    it('소셜 계정이 없으면 NoLinkedAccountException 을 던져야 합니다.', async () => {
       const { tokenService } = await setupTokenServiceTest({});
       await expect(
         tokenService.generateOAuthToken({
@@ -448,7 +448,7 @@ describe('TokenService', () => {
       const result = await tokenService.verifyEmailVerificationToken('test-token');
       expect(result).toEqual(mockPayload);
     });
-    it('유효하지 않은 이메일 토큰이면 InvalidEmailTokenException을 던져야 합니다.', async () => {
+    it('유효하지 않은 이메일 토큰이면 InvalidEmailTokenException 을 던져야 합니다.', async () => {
       const { tokenService } = await setupTokenServiceTest({
         jwt: {
           verify: jest.fn().mockImplementation(() => {
@@ -457,7 +457,7 @@ describe('TokenService', () => {
         },
       });
       await expect(tokenService.verifyEmailVerificationToken('test-token')).rejects.toThrow(
-        new InvalidEmailTokenException(),
+        InvalidEmailTokenException,
       );
     });
   });

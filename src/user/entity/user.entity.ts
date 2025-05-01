@@ -14,13 +14,13 @@ export class User {
   name!: string;
 
   @Property({ unique: true })
-  email!: string;
+  email: string;
 
   @Property({ nullable: true })
   password?: string;
 
   @Property({ type: 'jsonb', nullable: true })
-  passwordHistory?: { password: string; changedAt: Date }[];
+  passwordHistory: { password: string; changedAt: Date }[] = [];
 
   @Property({ default: false })
   marketingConsent = false;
