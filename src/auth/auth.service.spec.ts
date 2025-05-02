@@ -208,7 +208,7 @@ describe('AuthService', () => {
     });
 
     it('TTL이 threshold보다 작으면 새 토큰 TTL로 발급해야 합니다', async () => {
-      const user = { id: 1, email: 't@e.com', role: 'user' };
+      const user = { id: 1, email: 'test@email.com', role: 'user' };
 
       const { authService, tokenService } = await setupAuthServiceTest({
         tokenService: {
@@ -221,8 +221,8 @@ describe('AuthService', () => {
       });
 
       const spy = jest.spyOn(tokenService, 'generateTokens').mockResolvedValue({
-        accessToken: 'a',
-        refreshToken: 'r',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
         refreshTokenTtl: 604800,
       });
 
@@ -241,7 +241,7 @@ describe('AuthService', () => {
     });
 
     it('TTL이 threshold 이상이면 기존 TTL로 재사용해야 합니다', async () => {
-      const user = { id: 1, email: 't@e.com', role: 'user' };
+      const user = { id: 1, email: 'test@email.com', role: 'user' };
 
       const { authService, tokenService } = await setupAuthServiceTest({
         tokenService: {
@@ -254,8 +254,8 @@ describe('AuthService', () => {
       });
 
       const spy = jest.spyOn(tokenService, 'generateTokens').mockResolvedValue({
-        accessToken: 'a',
-        refreshToken: 'r',
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
         refreshTokenTtl: 2592000,
       });
 
