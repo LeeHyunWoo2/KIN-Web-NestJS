@@ -2,30 +2,41 @@ import { getRepositoryToken } from '@mikro-orm/nestjs';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { AuthService } from '@/auth/auth.service';
+import { SocialService } from '@/auth/social.service';
 import { TokenService } from '@/auth/token.service';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 
-import { createMockConfigService, MockConfigType } from './config.mock';
+import { createMockConfigService, MockConfigService, MockConfigType } from './config.mock';
 import { createMockRepository, MockRepository } from './repository.mock';
 
 interface SetupOptions {
+  config?: MockConfigType;
+  tokenService?: Partial<TokenService>;
   userRepo?: Partial<MockRepository<User>>;
   socialRepo?: Partial<MockRepository<SocialAccount>>;
-  tokenService?: Partial<TokenService>;
-  config?: MockConfigType;
 }
 
-export const setupAuthServiceTest = async (
+export const setupSocialServiceTest = async (
   overrides: SetupOptions = {},
 ): Promise<{
-  authService: AuthService;
+  socialService: SocialService;
+  config: MockConfigService;
+  tokenService: TokenService;
   userRepository: MockRepository<User>;
   socialAccountRepository: MockRepository<SocialAccount>;
-  config: ConfigService;
-  tokenService: TokenService;
 }> => {
+  const config = createMockConfigService({
+    'app.frontendOrigin': 'http://localhost:3000',
+    'auth.refreshTokenTtl': 604800,
+    ...(overrides.config || {}),
+  });
+
+  const tokenService = {
+    generateTokens: jest.fn(),
+    generateOAuthToken: jest.fn(),
+    ...overrides.tokenService,
+  } as TokenService;
   const userRepository = {
     ...createMockRepository<User>(),
     ...overrides.userRepo,
@@ -36,39 +47,21 @@ export const setupAuthServiceTest = async (
     ...overrides.socialRepo,
   };
 
-  const defaultConfig = {
-    'auth.refreshTokenTtl': 604800,
-    'auth.rememberRefreshTokenTtl': 2592000,
-    'auth.refreshTokenRenewThreshold': 10800,
-    'auth.rememberRefreshTokenRenewThreshold': 259200,
-  };
-  const config = createMockConfigService({
-    ...defaultConfig,
-    ...(overrides.config || {}),
-  });
-
-  const tokenService = {
-    generateTokens: jest.fn(),
-    verifyRefreshToken: jest.fn(),
-    getRemainingTtl: jest.fn(),
-    ...overrides.tokenService,
-  } as unknown as TokenService;
-
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
-      AuthService,
-      { provide: getRepositoryToken(User), useValue: userRepository },
-      { provide: getRepositoryToken(SocialAccount), useValue: socialAccountRepository },
+      SocialService,
       { provide: ConfigService, useValue: config },
       { provide: TokenService, useValue: tokenService },
+      { provide: getRepositoryToken(User), useValue: userRepository },
+      { provide: getRepositoryToken(SocialAccount), useValue: socialAccountRepository },
     ],
   }).compile();
 
   return {
-    authService: moduleRef.get(AuthService),
+    socialService: moduleRef.get(SocialService),
+    config,
+    tokenService,
     userRepository,
     socialAccountRepository,
-    config: moduleRef.get(ConfigService),
-    tokenService,
   };
 };

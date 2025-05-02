@@ -1,9 +1,10 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { FastifyRequest } from 'fastify';
 import { Profile, Strategy } from 'passport-google-oauth20';
 
+import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
 import { AccessTokenPayload } from '@/types/user.types';
 import { UserService } from '@/user/user.service';
 
@@ -31,7 +32,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const providerId = profile.id;
 
     if (!profile.emails?.[0]?.value) {
-      throw new InternalServerErrorException('소셜 계정에서 이메일을 받을 수 없습니다.');
+      throw new MissingSocialEmailException();
     }
 
     const existingUser = await this.userService.findUserBySocialAccount('google', providerId);

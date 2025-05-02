@@ -5,22 +5,24 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TokenService } from '@/auth/token.service';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 
-import { createMockConfigService, MockConfigService } from './config.mock';
+import { createMockConfigService, MockConfigService, MockConfigType } from './config.mock';
 import { createMockJwtService, MockJwtService } from './jwt.mock';
 import { createMockRedis, MockRedis } from './redis.mock';
 
 interface SetupOptions {
   redis?: Partial<MockRedis>;
-  config?: Record<string, string | number>;
+  config?: MockConfigType;
   jwt?: Partial<MockJwtService>;
 }
 
-export async function setupTokenServiceTest(overrides: SetupOptions = {}): Promise<{
+export const setupTokenServiceTest = async (
+  overrides: SetupOptions = {},
+): Promise<{
   tokenService: TokenService;
   redis: MockRedis;
   config: MockConfigService;
   jwt: MockJwtService;
-}> {
+}> => {
   const defaultConfig = {
     'auth.accessTokenSecret': 'access-secret',
     'auth.refreshTokenSecret': 'refresh-secret',
@@ -45,4 +47,4 @@ export async function setupTokenServiceTest(overrides: SetupOptions = {}): Promi
     config,
     jwt,
   };
-}
+};

@@ -4,6 +4,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { FastifyRequest } from 'fastify';
 import { Profile, Strategy, StrategyOptionWithRequest } from 'passport-naver';
 
+import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
 import { AccessTokenPayload } from '@/types/user.types';
 import { UserService } from '@/user/user.service';
 
@@ -29,6 +30,10 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
     profile: Profile,
   ): Promise<AccessTokenPayload> {
     const providerId = profile.id;
+
+    if (!profile._json.email) {
+      throw new MissingSocialEmailException();
+    }
 
     const existingUser = await this.userService.findUserBySocialAccount('naver', providerId);
     if (existingUser) {

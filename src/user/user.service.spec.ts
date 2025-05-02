@@ -601,8 +601,8 @@ describe('UserService', () => {
         userRepo: {
           create: jest.fn().mockImplementation((data) => ({
             ...data,
-            id: 1,
-            role: 'user',
+            id: 1 as const,
+            role: 'user' as const,
             email: (data as { email: string }).email,
           })),
           getEntityManager: jest.fn().mockReturnValue({ persistAndFlush: jest.fn() }),
@@ -649,11 +649,8 @@ describe('UserService', () => {
 
       await userService.deleteUser(userId, undefined, refreshToken);
 
-      const verifySpy = jest.spyOn(tokenService, 'verifyRefreshToken');
-      const deleteSpy = jest.spyOn(tokenService, 'deleteRefreshTokenFromRedis');
-
-      expect(verifySpy).toHaveBeenCalledWith(refreshToken);
-      expect(deleteSpy).toHaveBeenCalledWith(decoded.id);
+      expect(tokenService.verifyRefreshToken).toHaveBeenCalledWith(refreshToken);
+      expect(tokenService.deleteRefreshTokenFromRedis).toHaveBeenCalledWith(decoded.id);
     });
 
     it('accessToken이 주어지면 invalidateAccessToken을 호출해야 합니다', async () => {
@@ -667,9 +664,8 @@ describe('UserService', () => {
       });
 
       await userService.deleteUser(userId, accessToken);
-      const invalidateSpy = jest.spyOn(tokenService, 'invalidateAccessToken');
 
-      expect(invalidateSpy).toHaveBeenCalledWith(accessToken);
+      expect(tokenService.invalidateAccessToken).toHaveBeenCalledWith(accessToken);
     });
 
     it('유저가 존재하지 않으면 삭제를 생략해야 합니다', async () => {

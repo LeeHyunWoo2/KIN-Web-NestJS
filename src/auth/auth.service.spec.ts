@@ -131,13 +131,16 @@ describe('AuthService', () => {
         refreshTokenTtl: 604800,
       };
 
-      const { authService, tokenService } = await setupAuthServiceTest({
+      const generateTokensMock = jest.fn().mockResolvedValue(mockTokens);
+
+      const { authService } = await setupAuthServiceTest({
         userRepo: {
           findOne: jest.fn().mockResolvedValue(mockUser),
         },
+        tokenService: {
+          generateTokens: generateTokensMock,
+        },
       });
-
-      const spy = jest.spyOn(tokenService, 'generateTokens').mockResolvedValue(mockTokens);
 
       const result = await authService.loginUser({
         username: 'test',
@@ -146,7 +149,7 @@ describe('AuthService', () => {
       });
 
       expect(result).toEqual(mockTokens);
-      expect(spy).toHaveBeenCalledWith(
+      expect(generateTokensMock).toHaveBeenCalledWith(
         {
           id: mockUser.id,
           email: mockUser.email,
@@ -169,16 +172,17 @@ describe('AuthService', () => {
         refreshTokenTtl: 2592000,
       };
 
-      const { authService, tokenService } = await setupAuthServiceTest({
+      const { authService } = await setupAuthServiceTest({
         userRepo: {
           findOne: jest.fn().mockResolvedValue(mockUser),
         },
         config: {
           'auth.rememberRefreshTokenTtl': 2592000,
         },
+        tokenService: {
+          generateTokens: jest.fn().mockResolvedValue(mockTokens),
+        },
       });
-
-      jest.spyOn(tokenService, 'generateTokens').mockResolvedValue(mockTokens);
 
       const result = await authService.loginUser({
         username: 'test',
@@ -210,25 +214,26 @@ describe('AuthService', () => {
     it('TTL이 threshold보다 작으면 새 토큰 TTL로 발급해야 합니다', async () => {
       const user = { id: 1, email: 'test@email.com', role: 'user' };
 
-      const { authService, tokenService } = await setupAuthServiceTest({
+      const mockGenerateTokens = jest.fn().mockResolvedValue({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        refreshTokenTtl: 604800,
+      });
+
+      const { authService } = await setupAuthServiceTest({
         tokenService: {
           verifyRefreshToken: jest.fn().mockResolvedValue({ id: 1, rememberMe: false }),
           getRemainingTtl: jest.fn().mockResolvedValue(500),
+          generateTokens: mockGenerateTokens,
         },
         userRepo: {
           findOne: jest.fn().mockResolvedValue(user),
         },
       });
 
-      const spy = jest.spyOn(tokenService, 'generateTokens').mockResolvedValue({
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        refreshTokenTtl: 604800,
-      });
-
       const result = await authService.refreshTokens('refresh-token');
 
-      expect(spy).toHaveBeenCalledWith(
+      expect(mockGenerateTokens).toHaveBeenCalledWith(
         {
           id: 1,
           email: user.email,
@@ -243,25 +248,26 @@ describe('AuthService', () => {
     it('TTL이 threshold 이상이면 기존 TTL로 재사용해야 합니다', async () => {
       const user = { id: 1, email: 'test@email.com', role: 'user' };
 
-      const { authService, tokenService } = await setupAuthServiceTest({
+      const generateTokensMock = jest.fn().mockResolvedValue({
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        refreshTokenTtl: 2592000,
+      });
+
+      const { authService } = await setupAuthServiceTest({
         tokenService: {
           verifyRefreshToken: jest.fn().mockResolvedValue({ id: 1, rememberMe: true }),
           getRemainingTtl: jest.fn().mockResolvedValue(999999),
+          generateTokens: generateTokensMock,
         },
         userRepo: {
           findOne: jest.fn().mockResolvedValue(user),
         },
       });
 
-      const spy = jest.spyOn(tokenService, 'generateTokens').mockResolvedValue({
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-        refreshTokenTtl: 2592000,
-      });
-
       const result = await authService.refreshTokens('refresh-token');
 
-      expect(spy).toHaveBeenCalledWith(
+      expect(generateTokensMock).toHaveBeenCalledWith(
         {
           id: 1,
           email: user.email,

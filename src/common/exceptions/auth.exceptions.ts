@@ -68,3 +68,12 @@ export class EmailSendFailedException extends InternalServerErrorException {
     });
   }
 }
+
+export class MissingSocialEmailException extends InternalServerErrorException {
+  constructor() {
+    super({
+      message: '소셜 로그인 계정에서 이메일 정보를 가져올 수 없습니다.',
+      code: ExceptionCode.MISSING_SOCIAL_EMAIL,
+    });
+  }
+}

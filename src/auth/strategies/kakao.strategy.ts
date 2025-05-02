@@ -4,11 +4,12 @@ import { PassportStrategy } from '@nestjs/passport';
 import { FastifyRequest } from 'fastify';
 import { Profile, Strategy, StrategyOptionWithRequest } from 'passport-kakao';
 
+import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
 import { AccessTokenPayload } from '@/types/user.types';
 import { UserService } from '@/user/user.service';
 
 interface KakaoProfileJson {
-  kakao_account?: { email?: string };
+  kakao_account: { email: string };
   properties?: { profile_image?: string };
 }
 
@@ -35,6 +36,10 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
   ): Promise<AccessTokenPayload> {
     const { kakao_account, properties } = profile._json as KakaoProfileJson;
 
+    if (!kakao_account?.email) {
+      throw new MissingSocialEmailException();
+    }
+
     const providerId = profile.id;
 
     const existingUser = await this.userService.findUserBySocialAccount('kakao', providerId);
@@ -45,7 +50,7 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     return await this.userService.createSocialUser({
       provider: 'kakao',
       providerId,
-      email: kakao_account?.email,
+      email: kakao_account.email,
       name: profile.displayName,
       profileIcon: properties?.profile_image,
       socialRefreshToken: refreshToken,

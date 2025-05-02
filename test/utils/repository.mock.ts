@@ -1,4 +1,5 @@
 export interface MockRepository<T = any> {
+  find?: jest.Mock;
   findOne: jest.Mock;
   findAll?: jest.Mock;
   findAndCount?: jest.Mock;

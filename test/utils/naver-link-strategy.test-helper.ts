@@ -2,30 +2,34 @@ import { getRepositoryToken } from '@mikro-orm/nestjs';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { AuthService } from '@/auth/auth.service';
-import { TokenService } from '@/auth/token.service';
+import { NaverLinkStrategy } from '@/auth/strategies/naver-link.strategy';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 
-import { createMockConfigService, MockConfigType } from './config.mock';
+import { createMockConfigService, MockConfigService } from './config.mock';
 import { createMockRepository, MockRepository } from './repository.mock';
 
 interface SetupOptions {
+  config?: Record<string, string>;
   userRepo?: Partial<MockRepository<User>>;
   socialRepo?: Partial<MockRepository<SocialAccount>>;
-  tokenService?: Partial<TokenService>;
-  config?: MockConfigType;
 }
 
-export const setupAuthServiceTest = async (
+export const setupNaverLinkStrategyTest = async (
   overrides: SetupOptions = {},
 ): Promise<{
-  authService: AuthService;
+  strategy: NaverLinkStrategy;
+  config: MockConfigService;
   userRepository: MockRepository<User>;
   socialAccountRepository: MockRepository<SocialAccount>;
-  config: ConfigService;
-  tokenService: TokenService;
 }> => {
+  const config = createMockConfigService({
+    'oauth.naver.clientId': 'naver-client-id',
+    'oauth.naver.clientSecret': 'naver-client-secret',
+    'oauth.naver.linkCallbackUrl': 'http://localhost:3000/auth/naver-link/callback',
+    ...(overrides.config || {}),
+  });
+
   const userRepository = {
     ...createMockRepository<User>(),
     ...overrides.userRepo,
@@ -36,39 +40,19 @@ export const setupAuthServiceTest = async (
     ...overrides.socialRepo,
   };
 
-  const defaultConfig = {
-    'auth.refreshTokenTtl': 604800,
-    'auth.rememberRefreshTokenTtl': 2592000,
-    'auth.refreshTokenRenewThreshold': 10800,
-    'auth.rememberRefreshTokenRenewThreshold': 259200,
-  };
-  const config = createMockConfigService({
-    ...defaultConfig,
-    ...(overrides.config || {}),
-  });
-
-  const tokenService = {
-    generateTokens: jest.fn(),
-    verifyRefreshToken: jest.fn(),
-    getRemainingTtl: jest.fn(),
-    ...overrides.tokenService,
-  } as unknown as TokenService;
-
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
-      AuthService,
+      NaverLinkStrategy,
+      { provide: ConfigService, useValue: config },
       { provide: getRepositoryToken(User), useValue: userRepository },
       { provide: getRepositoryToken(SocialAccount), useValue: socialAccountRepository },
-      { provide: ConfigService, useValue: config },
-      { provide: TokenService, useValue: tokenService },
     ],
   }).compile();
 
   return {
-    authService: moduleRef.get(AuthService),
+    strategy: moduleRef.get(NaverLinkStrategy),
+    config,
     userRepository,
     socialAccountRepository,
-    config: moduleRef.get(ConfigService),
-    tokenService,
   };
 };
