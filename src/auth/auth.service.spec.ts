@@ -237,7 +237,7 @@ describe('AuthService', () => {
         604800,
       );
 
-      expect(result.accessToken).toBe('a');
+      expect(result.accessToken).toBe('access-token');
     });
 
     it('TTL이 threshold 이상이면 기존 TTL로 재사용해야 합니다', async () => {
@@ -270,7 +270,7 @@ describe('AuthService', () => {
         999999,
       );
 
-      expect(result.refreshToken).toBe('r');
+      expect(result.refreshToken).toBe('refresh-token');
     });
   });
 });
