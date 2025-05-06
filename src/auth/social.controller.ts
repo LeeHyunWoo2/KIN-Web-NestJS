@@ -4,7 +4,6 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { SocialService } from '@/auth/social.service';
-import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { DecodedUser } from '@/types/user.types';
 
@@ -14,22 +13,18 @@ export class SocialController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  @CatchAndLog()
   async googleLogin(): Promise<void> {}
 
   @Get('kakao')
   @UseGuards(AuthGuard('kakao'))
-  @CatchAndLog()
   async kakaoLogin(): Promise<void> {}
 
   @Get('naver')
   @UseGuards(AuthGuard('naver'))
-  @CatchAndLog()
   async naverLogin(): Promise<void> {}
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  @CatchAndLog()
   async googleCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -40,7 +35,6 @@ export class SocialController {
 
   @Get('kakao/callback')
   @UseGuards(AuthGuard('kakao'))
-  @CatchAndLog()
   async kakaoCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -51,7 +45,6 @@ export class SocialController {
 
   @Get('naver/callback')
   @UseGuards(AuthGuard('naver'))
-  @CatchAndLog()
   async naverCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -62,22 +55,18 @@ export class SocialController {
 
   @Get('link/google')
   @UseGuards(AccessGuard, AuthGuard('google-link'))
-  @CatchAndLog()
   async linkGoogle(): Promise<void> {}
 
   @Get('link/kakao')
   @UseGuards(AccessGuard, AuthGuard('kakao-link'))
-  @CatchAndLog()
   async linkKakao(): Promise<void> {}
 
   @Get('link/naver')
   @UseGuards(AccessGuard, AuthGuard('naver-link'))
-  @CatchAndLog()
   async linkNaver(): Promise<void> {}
 
   @Get('link/google/callback')
   @UseGuards(AccessGuard, AuthGuard('google-link'))
-  @CatchAndLog()
   async linkGoogleCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -93,7 +82,6 @@ export class SocialController {
 
   @Get('link/kakao/callback')
   @UseGuards(AccessGuard, AuthGuard('kakao-link'))
-  @CatchAndLog()
   async linkKakaoCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -109,7 +97,6 @@ export class SocialController {
 
   @Get('link/naver/callback')
   @UseGuards(AccessGuard, AuthGuard('naver-link'))
-  @CatchAndLog()
   async linkNaverCallback(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -127,7 +114,6 @@ export class SocialController {
   @Delete('kakao')
   @Delete('naver')
   @UseGuards(AccessGuard)
-  @CatchAndLog()
   async unlinkSocial(
     @CurrentUserDecorator() user: DecodedUser,
     @Param('provider') provider: 'google' | 'kakao' | 'naver',

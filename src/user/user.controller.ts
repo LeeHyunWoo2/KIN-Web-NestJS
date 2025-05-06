@@ -3,7 +3,6 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
-import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { DecodedUser } from '@/types/user.types';
 import { FindUserResultDto } from '@/user/dto/find-result-response';
@@ -21,7 +20,6 @@ export class UserController {
 
   @Get()
   @UseGuards(AccessGuard)
-  @CatchAndLog()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'public 유저 데이터 (프로필 표시용)' })
   @ApiResponse({ status: 200, type: PublicUserProfileDto })
@@ -33,7 +31,6 @@ export class UserController {
 
   @Post()
   @UseGuards(AccessGuard)
-  @CatchAndLog()
   @ApiBearerAuth()
   @ApiOperation({ summary: '로그인된 유저의 전체 정보 조회' })
   @ApiResponse({ status: 200, type: UserInfoResponseDto })
@@ -43,7 +40,6 @@ export class UserController {
 
   @Put()
   @UseGuards(AccessGuard)
-  @CatchAndLog()
   @ApiBearerAuth()
   @ApiOperation({ summary: '유저 정보 수정 (이름, 프로필 아이콘)' })
   async updateUser(
@@ -54,14 +50,12 @@ export class UserController {
   }
 
   @Put('password')
-  @CatchAndLog()
   @ApiOperation({ summary: '비밀번호 재설정 (비밀번호 찾기 후 사용)' })
   async resetPassword(@Body() body: ResetPasswordDto): Promise<void> {
     return this.userService.resetPassword(body.newPassword, body.email);
   }
 
   @Post('find')
-  @CatchAndLog()
   @ApiOperation({ summary: '아이디 / 비밀번호 찾기 또는 중복 확인' })
   @ApiResponse({
     status: 200,
@@ -74,7 +68,6 @@ export class UserController {
 
   @Post('change-local')
   @UseGuards(AccessGuard)
-  @CatchAndLog()
   async addLocalAccount(
     @CurrentUserDecorator() user: DecodedUser,
     @Body() body: { username: string; email: string; password: string },
@@ -84,7 +77,6 @@ export class UserController {
 
   @Delete()
   @UseGuards(AccessGuard)
-  @CatchAndLog()
   async deleteUser(
     @CurrentUserDecorator() user: DecodedUser,
     @Req() req: FastifyRequest,

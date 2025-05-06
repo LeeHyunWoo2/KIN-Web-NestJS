@@ -6,7 +6,6 @@ import { Redis } from 'ioredis';
 import { assoc, mergeRight, pick, prop } from 'ramda';
 
 import { TokenService } from '@/auth/token.service';
-import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import {
   AlreadyHasLocalAccountException,
@@ -39,7 +38,6 @@ export class UserService {
     private readonly tokenService: TokenService,
   ) {}
 
-  @CatchAndLog()
   @LogExecutionTime()
   async getPublicProfile(id: number): Promise<PublicUserProfile> {
     const cacheKey = `publicProfile:${id}`;
@@ -63,7 +61,6 @@ export class UserService {
     return profile;
   }
 
-  @CatchAndLog()
   async getUserInfo(id: number): Promise<SafeUserInfo> {
     const user = await this.userRepository.findOne(id, {
       fields: [
@@ -115,7 +112,6 @@ export class UserService {
     return { ...base, ...additionalField };
   }
 
-  @CatchAndLog()
   async findUserBySocialAccount(
     provider: 'google' | 'kakao' | 'naver',
     providerId: string,
@@ -138,7 +134,6 @@ export class UserService {
     };
   }
 
-  @CatchAndLog()
   async updateUser(id: number, data: UpdateUserProfileData): Promise<Partial<PublicUserProfile>> {
     this.ensureNotTestAccount(id);
 
@@ -172,7 +167,6 @@ export class UserService {
     return updatedProfile;
   }
 
-  @CatchAndLog()
   async resetPassword(email: string, newPassword: string): Promise<void> {
     const user = await this.userRepository.findOne(
       { email },
@@ -202,7 +196,6 @@ export class UserService {
     await this.userRepository.getEntityManager().persistAndFlush(user);
   }
 
-  @CatchAndLog()
   async addLocalAccount(
     id: number,
     username: string,
@@ -301,7 +294,6 @@ export class UserService {
     }
   }
 
-  @CatchAndLog()
   private ensureNotTestAccount(id: number): void {
     const testAccounts = [123456789, 987654321];
     if (testAccounts.includes(id)) {

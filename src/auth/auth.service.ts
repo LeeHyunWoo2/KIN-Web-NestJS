@@ -5,7 +5,6 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 
 import { TokenService } from '@/auth/token.service';
-import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import {
   EmailAlreadyExistsException,
   InvalidCredentialsException,
@@ -27,7 +26,6 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
-  @CatchAndLog()
   async registerUser(input: CreateUserInput): Promise<void> {
     const { username, email, password, name, marketingConsent } = input;
 
@@ -72,7 +70,6 @@ export class AuthService {
     await this.socialAccountRepository.getEntityManager().persistAndFlush(socialAccount);
   }
 
-  @CatchAndLog()
   async loginUser(input: LoginUserInput): Promise<TokenPair> {
     const { username, password, rememberMe } = input;
 
@@ -100,7 +97,6 @@ export class AuthService {
     return this.tokenService.generateTokens(payload, ttl);
   }
 
-  @CatchAndLog()
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
     const { id, rememberMe } = await this.tokenService.verifyRefreshToken(refreshToken);
 

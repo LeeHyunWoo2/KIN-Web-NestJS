@@ -6,7 +6,6 @@ import { SendVerificationEmailResponseDto } from '@/auth/dto/send-verification-e
 import { VerifyEmailTokenResponseDto } from '@/auth/dto/verify-email-token-response.dto';
 import { EmailService } from '@/auth/email.service';
 import { TokenService } from '@/auth/token.service';
-import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 
 @ApiTags('Auth')
 @Controller('auth/email')
@@ -17,7 +16,6 @@ export class EmailController {
   ) {}
 
   @Post()
-  @CatchAndLog()
   @ApiOperation({ summary: '이메일 인증 링크 전송' })
   @ApiResponse({
     status: 200,
@@ -32,7 +30,6 @@ export class EmailController {
   }
 
   @Get()
-  @CatchAndLog()
   @ApiOperation({ summary: '이메일 인증 토큰 검증' })
   @ApiQuery({ name: 'token', required: true })
   @ApiResponse({

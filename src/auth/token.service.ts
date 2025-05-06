@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Redis } from 'ioredis';
 
-import { CatchAndLog } from '@/common/decorators/catch-and-log.decorator';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import { InvalidEmailTokenException } from '@/common/exceptions/auth.exceptions';
 import {
@@ -40,7 +39,6 @@ export class TokenService {
     this.refreshTokenSecret = config.getOrThrow<string>('auth.refreshTokenSecret');
   }
 
-  @CatchAndLog()
   @LogExecutionTime()
   async generateTokens(payload: AccessTokenPayload, refreshTtl: number): Promise<TokenPair> {
     const accessToken = await this.jwtService.signAsync(payload, {
@@ -59,7 +57,6 @@ export class TokenService {
     return { accessToken, refreshToken, refreshTokenTtl: refreshTtl };
   }
 
-  @CatchAndLog()
   @LogExecutionTime()
   async verifyAccessToken(accessToken: string): Promise<AccessTokenPayload> {
     if (!accessToken) {
@@ -81,7 +78,6 @@ export class TokenService {
     }
   }
 
-  @CatchAndLog()
   @LogExecutionTime()
   async verifyRefreshToken(refreshToken: string): Promise<RefreshTokenPayload> {
     let decoded: { id: number };
@@ -103,7 +99,6 @@ export class TokenService {
     return { id: decoded.id, rememberMe: parsed.rememberMe };
   }
 
-  @CatchAndLog()
   @LogExecutionTime()
   async getRemainingTtl(key: string): Promise<number> {
     const ttl = await this.redisClient.ttl(key);
@@ -114,7 +109,6 @@ export class TokenService {
     return ttl;
   }
 
-  @CatchAndLog()
   @LogExecutionTime()
   async generateOAuthToken(data: GenerateOAuthToken): Promise<string> {
     const { user, provider } = data;
@@ -162,7 +156,6 @@ export class TokenService {
     if (ttl > 0) await this.redisClient.set(`blacklist:${accessToken}`, 'true', 'EX', ttl);
   }
 
-  @CatchAndLog()
   @LogExecutionTime()
   async saveRefreshTokenToRedis(
     id: number,

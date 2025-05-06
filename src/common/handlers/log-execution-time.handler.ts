@@ -3,7 +3,7 @@ import { Inject, Injectable, LoggerService } from '@nestjs/common';
 import { Aspect, LazyDecorator, WrapParams } from '@toss/nestjs-aop';
 import { Logger } from 'nestjs-pino';
 
-import { LOG_EXECUTION_TIME } from '../symbols/log-execution-time.symbol';
+import { LOG_EXECUTION_TIME } from '../symbols';
 
 @Injectable()
 @Aspect(LOG_EXECUTION_TIME)
