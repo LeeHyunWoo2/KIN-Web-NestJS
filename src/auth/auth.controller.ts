@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
@@ -23,6 +23,8 @@ export class AuthController {
   @Post('register')
   @HttpCode(201)
   @ApiOperation({ summary: '회원가입 (로컬)' })
+  @ApiResponse({ status: 201, description: '회원가입 성공 (응답 본문 없음)' })
+  @ApiResponse({ status: 409, description: '이미 존재하는 사용자 (아이디 또는 이메일)' })
   async register(@Body() dto: RegisterDto): Promise<void> {
     const input: CreateUserInput = {
       username: dto.username,
@@ -36,7 +38,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @ApiOperation({ summary: '로그인 (로컬) ' })
+  @ApiOperation({ summary: '로그인 (로컬)' })
   @ApiResponse({
     status: 200,
     description: '로그인 성공',
@@ -46,6 +48,7 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({ status: 401, description: '아이디 또는 비밀번호 불일치' })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
@@ -57,13 +60,11 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiBearerAuth()
   @ApiOperation({ summary: '로그아웃' })
   @ApiResponse({
     status: 200,
-    description: '쿠키 삭제 후 로그아웃 처리',
-    schema: {
-      example: {},
-    },
+    description: '로그아웃 성공 (쿠키 제거, 응답 본문 없음)',
   })
   async logout(
     @RefreshToken() refreshToken: string,
@@ -91,7 +92,14 @@ export class AuthController {
 
   @Post('refresh')
   @ApiOperation({ summary: 'AccessToken 재발급' })
-  @ApiResponse({ status: 200, description: '리프레시 토큰을 통해 새 AccessToken 발급' })
+  @ApiResponse({
+    status: 200,
+    description: 'AccessToken 재발급 성공 (응답 본문 없음)',
+  })
+  @ApiResponse({
+    status: 401,
+    description: '리프레시 토큰 누락 또는 유효하지 않음',
+  })
   async refresh(
     @RefreshToken() refreshToken: string,
     @Req() req: FastifyRequest,
@@ -107,19 +115,22 @@ export class AuthController {
 
   @Get('session')
   @UseGuards(AccessGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'AccessToken 기반 세션 확인' })
   @ApiResponse({
     status: 200,
     description: 'AccessToken이 유효하면 사용자 기본 정보 반환',
     schema: {
       example: {
-        user: {
-          id: 'number',
-          email: 'string',
-          role: 'user | admin',
-        },
+        id: 1,
+        email: 'user@example.com',
+        role: 'user',
       },
     },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'AccessToken 누락 또는 무효',
   })
   checkSession(@CurrentUserDecorator() user: DecodedUser) {
     return user;

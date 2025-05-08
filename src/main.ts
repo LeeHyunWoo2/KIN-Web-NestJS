@@ -29,13 +29,23 @@ async function bootstrap(): Promise<void> {
 
   const config = new DocumentBuilder()
     .setTitle('Keep Idea Note API')
-    .setDescription('Auth, Notes, User, Visitor 등 API 문서')
-    .setVersion('1.0')
-    .addCookieAuth('accessToken')
+    .setDescription('회원 인증, 유저 정보 REST API')
+    .setVersion('1.0.0')
+    .addCookieAuth('accessToken', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'accessToken',
+    })
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      docExpansion: 'none',
+      displayRequestDuration: true,
+    },
+  });
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.enableCors({
