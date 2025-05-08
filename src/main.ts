@@ -1,3 +1,4 @@
+/* eslint-disable */
 import cookie from '@fastify/cookie';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -33,8 +34,8 @@ async function bootstrap(): Promise<void> {
     .addCookieAuth('accessToken')
     .build();
 
-  const documentFactory = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, documentFactory);
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.enableCors({
@@ -42,11 +43,29 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
+  const logger = app.get(Logger);
+
+  process.on('uncaughtException', (err) => {
+    logger.error({
+      type: 'FATAL_UNCAUGHT_EXCEPTION',
+      message: err.message,
+      stack: err.stack,
+    });
+  });
+
+  process.on('unhandledRejection', (reason: any) => {
+    logger.error({
+      type: 'FATAL_UNHANDLED_REJECTION',
+      message: reason?.message ?? String(reason),
+      stack: reason?.stack ?? undefined,
+    });
+  });
+
+  setLogger(logger);
+
   const port = configService.get<number>('app.port') ?? 5000;
   await app.listen(port);
 
-  const logger = app.get(Logger);
-  setLogger(logger);
   logger.log(`Server is running on: ${await app.getUrl()}`, 'Bootstrap');
 }
 

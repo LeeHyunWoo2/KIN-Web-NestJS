@@ -3,7 +3,6 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/co
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { logError } from '@/common/log-error';
-import { LoggableError } from '@/common/types/loggable-error';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -12,7 +11,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const req = ctx.getRequest<FastifyRequest>();
     const res = ctx.getResponse<FastifyReply>();
 
-    const err = exception as LoggableError;
+    const err = exception instanceof Error ? exception : new Error('Unknown error');
     const status = exception instanceof HttpException ? exception.getStatus() : 500;
 
     logError(err, req);

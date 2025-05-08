@@ -9,6 +9,7 @@ import { RegisterDto } from '@/auth/dto/register.dto';
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
+import { RefreshToken } from '@/common/decorators/refresh-token.decorator';
 import { RefreshTokenMissingException } from '@/common/exceptions/token.exceptions';
 import { CreateUserInput, DecodedUser, LoginUserInput, TokenPair } from '@/types/user.types';
 
@@ -66,18 +67,18 @@ export class AuthController {
     },
   })
   async logout(
+    @RefreshToken() refreshToken: string,
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
     const accessToken = req.cookies?.accessToken;
-    const refreshToken = req.cookies?.refreshToken;
 
     if (refreshToken) {
       try {
         const { id } = await this.tokenService.verifyRefreshToken(refreshToken);
         await this.tokenService.deleteRefreshTokenFromRedis(id);
       } catch {
-        // 예외가 발생해도 무시하고 삭제 진행
+        // 무시하고 진행
       }
     }
 
@@ -93,10 +94,10 @@ export class AuthController {
   @ApiOperation({ summary: 'AccessToken 재발급' })
   @ApiResponse({ status: 200, description: '리프레시 토큰을 통해 새 AccessToken 발급' })
   async refresh(
+    @RefreshToken() refreshToken: string,
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
       throw new RefreshTokenMissingException();
     }

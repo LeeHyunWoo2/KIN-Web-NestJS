@@ -4,6 +4,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
+import { RefreshToken } from '@/common/decorators/refresh-token.decorator';
 import { DecodedUser } from '@/types/user.types';
 import { FindUserResultDto } from '@/user/dto/find-result-response';
 import { FindUserDto } from '@/user/dto/find-user.dto';
@@ -80,9 +81,10 @@ export class UserController {
   async deleteUser(
     @CurrentUserDecorator() user: DecodedUser,
     @Req() req: FastifyRequest,
+    @RefreshToken() refreshToken: string,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const { accessToken, refreshToken } = req.cookies;
+    const { accessToken } = req.cookies;
     await this.userService.deleteUser(user.id, accessToken, refreshToken);
     reply.clearCookie('accessToken');
     reply.clearCookie('refreshToken');

@@ -1,8 +1,6 @@
 import { HttpException, LoggerService } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 
-import { LoggableError } from '@/common/types/loggable-error';
-
 let logger: LoggerService;
 
 export const setLogger = (loggerService: LoggerService): void => {
@@ -10,29 +8,21 @@ export const setLogger = (loggerService: LoggerService): void => {
 };
 
 export const logError = (error: unknown, req: FastifyRequest): void => {
-  if (!logger) {
-    console.error('Logger 초기화 실패', error);
-    return;
-  }
-
-  const err = error as LoggableError;
-  if (err.__alreadyLogged) return;
-
+  const err = error instanceof Error ? error : new Error(String(error) || 'Unknown error');
   const status = error instanceof HttpException ? error.getStatus() : 500;
   const level = getLogLevel(status);
 
-  const logPayload = {
-    source: '💥 HttpExceptionFilter',
+  logger[level]({
+    source: 'HttpExceptionFilter',
     type: 'server',
     status,
     message: err.message,
     stack: err.stack,
     path: req.url,
     method: req.method,
-    user: (req as { user?: { id?: string } })?.user?.id || 'anonymous',
+    user: req.user?.id ?? 'anonymous',
     timestamp: new Date().toISOString(),
-  };
-  logger[level](logPayload);
+  });
 };
 
 const getLogLevel = (statusCode: number): 'log' | 'warn' | 'error' => {
