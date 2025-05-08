@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 
 import { TokenService } from '@/auth/token.service';
+import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import {
   EmailAlreadyExistsException,
   InvalidCredentialsException,
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly config: ConfigService,
   ) {}
 
+  @LogExecutionTime()
   async registerUser(input: CreateUserInput): Promise<void> {
     const { username, email, password, name, marketingConsent } = input;
 
@@ -70,6 +72,7 @@ export class AuthService {
     await this.socialAccountRepository.getEntityManager().persistAndFlush(socialAccount);
   }
 
+  @LogExecutionTime()
   async loginUser(input: LoginUserInput): Promise<TokenPair> {
     const { username, password, rememberMe } = input;
 
@@ -97,6 +100,7 @@ export class AuthService {
     return this.tokenService.generateTokens(payload, ttl);
   }
 
+  @LogExecutionTime()
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
     const { id, rememberMe } = await this.tokenService.verifyRefreshToken(refreshToken);
 

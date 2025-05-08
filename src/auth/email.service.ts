@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 import { TokenService } from '@/auth/token.service';
+import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import { EmailSendFailedException } from '@/common/exceptions/auth.exceptions';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class EmailService {
     private readonly tokenService: TokenService,
   ) {}
 
+  @LogExecutionTime()
   async sendVerificationEmail(email: string): Promise<void> {
     const token = this.tokenService.generateEmailVerificationToken(email);
 

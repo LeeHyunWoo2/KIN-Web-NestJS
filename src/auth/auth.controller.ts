@@ -4,8 +4,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { AuthService } from '@/auth/auth.service';
-import { LoginDto } from '@/auth/dto/login.dto';
-import { RegisterDto } from '@/auth/dto/register.dto';
+import { LoginDto, RegisterDto } from '@/auth/dto/auth.dto';
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';

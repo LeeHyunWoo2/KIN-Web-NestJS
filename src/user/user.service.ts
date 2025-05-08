@@ -61,6 +61,7 @@ export class UserService {
     return profile;
   }
 
+  @LogExecutionTime()
   async getUserInfo(id: number): Promise<SafeUserInfo> {
     const user = await this.userRepository.findOne(id, {
       fields: [
@@ -81,6 +82,7 @@ export class UserService {
     return user;
   }
 
+  @LogExecutionTime()
   async findUserByInput(
     query: FindUserQuery & { fetchUsername: boolean },
   ): Promise<FindUserQueryData> {
@@ -134,6 +136,7 @@ export class UserService {
     };
   }
 
+  @LogExecutionTime()
   async updateUser(id: number, data: UpdateUserProfileData): Promise<Partial<PublicUserProfile>> {
     this.ensureNotTestAccount(id);
 
@@ -167,6 +170,7 @@ export class UserService {
     return updatedProfile;
   }
 
+  @LogExecutionTime()
   async resetPassword(email: string, newPassword: string): Promise<void> {
     const user = await this.userRepository.findOne(
       { email },

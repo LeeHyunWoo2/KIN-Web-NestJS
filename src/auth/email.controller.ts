@@ -1,9 +1,11 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { RequestEmailTokenDto } from '@/auth/dto/request-email-token.dto';
-import { SendVerificationEmailResponseDto } from '@/auth/dto/send-verification-email-response.dto';
-import { VerifyEmailTokenResponseDto } from '@/auth/dto/verify-email-token-response.dto';
+import {
+  RequestEmailTokenDto,
+  SendVerificationEmailResponseDto,
+  VerifyEmailTokenResponseDto,
+} from '@/auth/dto/email-token.dto';
 import { EmailService } from '@/auth/email.service';
 import { TokenService } from '@/auth/token.service';
 

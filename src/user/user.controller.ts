@@ -6,12 +6,14 @@ import { AccessGuard } from '@/auth/access.guard';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { RefreshToken } from '@/common/decorators/refresh-token.decorator';
 import { DecodedUser } from '@/types/user.types';
-import { FindUserResultDto } from '@/user/dto/find-result-response';
-import { FindUserDto } from '@/user/dto/find-user.dto';
-import { PublicUserProfileDto } from '@/user/dto/public-user-profile.dto';
-import { ResetPasswordDto } from '@/user/dto/reset-password.dto';
-import { UpdateUserDto } from '@/user/dto/update-user.dto';
-import { UserInfoResponseDto } from '@/user/dto/user-info-response.dto';
+import { ResetPasswordDto } from '@/user/dto/user-auth.dto';
+import {
+  AddLocalAccountDto,
+  PublicUserProfileDto,
+  UpdateUserDto,
+  UserInfoResponseDto,
+} from '@/user/dto/user-profile.dto';
+import { FindUserDto, FindUserResultDto } from '@/user/dto/user-search.dto';
 import { UserService } from '@/user/user.service';
 
 @ApiTags('User')
@@ -71,9 +73,9 @@ export class UserController {
   @UseGuards(AccessGuard)
   async addLocalAccount(
     @CurrentUserDecorator() user: DecodedUser,
-    @Body() body: { username: string; email: string; password: string },
+    @Body() dto: AddLocalAccountDto,
   ): Promise<void> {
-    return this.userService.addLocalAccount(user.id, body.username, body.email, body.password);
+    return this.userService.addLocalAccount(user.id, dto.username, dto.email, dto.password);
   }
 
   @Delete()

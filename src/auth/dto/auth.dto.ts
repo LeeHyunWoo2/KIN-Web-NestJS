@@ -1,14 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsString, Matches, MinLength } from 'class-validator';
 
-import { UserSnapshot } from '@/types/user.types';
+export class LoginDto {
+  @ApiProperty({ description: '사용자 ID', example: 'johndoe123' })
+  @IsString()
+  @MinLength(6, { message: '아이디는 최소 6자 이상이어야 합니다.' })
+  username: string;
 
-type RegisterFields = Pick<
-  UserSnapshot,
-  'username' | 'email' | 'password' | 'name' | 'marketingConsent'
->;
+  @ApiProperty({ description: '비밀번호', example: 'StrongP@ssw0rd!' })
+  @IsString()
+  @MinLength(1, { message: '비밀번호를 입력해주세요.' })
+  password: string;
 
-export class RegisterDto implements RegisterFields {
+  @ApiProperty({ description: '자동 로그인 여부 플래그', example: true })
+  @IsBoolean()
+  rememberMe: boolean;
+}
+
+export class RegisterDto {
   @ApiProperty({ description: '사용자 ID', example: 'johndoe123' })
   @IsString()
   @MinLength(6, { message: '아이디는 최소 6자 이상이어야 합니다.' })

@@ -6,6 +6,7 @@ import { FastifyReply } from 'fastify';
 
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
+import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import {
   NoRemainingAuthMethodException,
@@ -26,6 +27,7 @@ export class SocialService {
     private readonly socialAccountRepository: EntityRepository<SocialAccount>,
   ) {}
 
+  @LogExecutionTime()
   async handleSocialCallbackResult(
     user: AccessTokenPayload | undefined,
     reply: FastifyReply,
@@ -51,6 +53,7 @@ export class SocialService {
     reply.redirect(`${frontendOrigin}/loginSuccess`);
   }
 
+  @LogExecutionTime()
   async redirectAfterLink(
     reply: FastifyReply,
     error: PassportAuthResultError,
@@ -66,6 +69,7 @@ export class SocialService {
     await reply.redirect(target);
   }
 
+  @LogExecutionTime()
   async unlinkSocialAccount(id: number, provider: 'google' | 'kakao' | 'naver'): Promise<void> {
     const user = await this.userRepository.findOne(id, {
       fields: ['id'],

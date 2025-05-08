@@ -6,11 +6,11 @@ export class ResetPasswordDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ description: '새로운 비밀번호', example: 'VeryStr0ngP@ssword!123~' })
+  @ApiProperty({ description: '새 비밀번호', example: 'VeryStr0ngP@ssword!123~' })
   @IsString()
-  @MinLength(8, { message: '비밀번호는 최소 8자 이상이어야 합니다.' })
+  @MinLength(8)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*\W).+$/, {
-    message: '비밀번호는 대소문자, 특수문자, 숫자를 각각 하나 이상 포함해야 합니다.',
+    message: '비밀번호는 대소문자, 특수문자, 숫자를 각각 포함해야 합니다.',
   })
   newPassword: string;
 }

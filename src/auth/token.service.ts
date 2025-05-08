@@ -99,7 +99,6 @@ export class TokenService {
     return { id: decoded.id, rememberMe: parsed.rememberMe };
   }
 
-  @LogExecutionTime()
   async getRemainingTtl(key: string): Promise<number> {
     const ttl = await this.redisClient.ttl(key);
     // -2: key 없음, -1: ttl 없음
@@ -156,7 +155,6 @@ export class TokenService {
     if (ttl > 0) await this.redisClient.set(`blacklist:${accessToken}`, 'true', 'EX', ttl);
   }
 
-  @LogExecutionTime()
   async saveRefreshTokenToRedis(
     id: number,
     refreshToken: string,
@@ -180,7 +178,6 @@ export class TokenService {
     await this.redisClient.del(`publicProfile:${id}`);
   }
 
-  @LogExecutionTime()
   generateEmailVerificationToken(email: string): string {
     return this.jwtService.sign({ email }, { expiresIn: '10m', secret: this.accessTokenSecret });
   }
