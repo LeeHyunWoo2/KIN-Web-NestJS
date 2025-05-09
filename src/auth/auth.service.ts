@@ -9,9 +9,10 @@ import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorat
 import {
   EmailAlreadyExistsException,
   InvalidCredentialsException,
+  RefreshTokenMissingException,
   UsernameAlreadyExistsException,
-} from '@/common/exceptions/auth.exceptions';
-import { UserNotFoundException } from '@/common/exceptions/user.exceptions';
+  UserNotFoundException,
+} from '@/common/exceptions';
 import { AccessTokenPayload, CreateUserInput, LoginUserInput, TokenPair } from '@/types/user.types';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
@@ -24,7 +25,7 @@ export class AuthService {
     @InjectRepository(SocialAccount)
     private readonly socialAccountRepository: EntityRepository<SocialAccount>,
     private readonly tokenService: TokenService,
-    private readonly config: ConfigService,
+    private readonly configService: ConfigService,
   ) {}
 
   @LogExecutionTime()
@@ -94,14 +95,17 @@ export class AuthService {
     };
 
     const ttl = rememberMe
-      ? this.config.getOrThrow<number>('auth.rememberRefreshTokenTtl')
-      : this.config.getOrThrow<number>('auth.refreshTokenTtl');
+      ? this.configService.getOrThrow<number>('auth.rememberRefreshTokenTtl')
+      : this.configService.getOrThrow<number>('auth.refreshTokenTtl');
 
     return this.tokenService.generateTokens(payload, ttl);
   }
 
   @LogExecutionTime()
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
+    if (!refreshToken) {
+      throw new RefreshTokenMissingException();
+    }
     const { id, rememberMe } = await this.tokenService.verifyRefreshToken(refreshToken);
 
     const user = await this.userRepository.findOne(id, {
@@ -114,12 +118,12 @@ export class AuthService {
     const currentTtl = await this.tokenService.getRemainingTtl(key);
 
     const threshold = rememberMe
-      ? this.config.getOrThrow<number>('auth.rememberRefreshTokenRenewThreshold')
-      : this.config.getOrThrow<number>('auth.refreshTokenRenewThreshold');
+      ? this.configService.getOrThrow<number>('auth.rememberRefreshTokenRenewThreshold')
+      : this.configService.getOrThrow<number>('auth.refreshTokenRenewThreshold');
 
     const maxTtl = rememberMe
-      ? this.config.getOrThrow<number>('auth.rememberRefreshTokenTtl')
-      : this.config.getOrThrow<number>('auth.refreshTokenTtl');
+      ? this.configService.getOrThrow<number>('auth.rememberRefreshTokenTtl')
+      : this.configService.getOrThrow<number>('auth.refreshTokenTtl');
 
     const ttlToUse = currentTtl < threshold ? maxTtl : currentTtl;
 

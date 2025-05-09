@@ -2,24 +2,28 @@ import { InjectRepository } from '@mikro-orm/nestjs';
 import { EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { FastifyReply } from 'fastify';
 
 import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
-import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import {
+  AlreadyLinkedException,
   NoRemainingAuthMethodException,
   UserNotFoundException,
-} from '@/common/exceptions/user.exceptions';
-import { AccessTokenPayload, PassportAuthResultError } from '@/types/user.types';
+} from '@/common/exceptions';
+import {
+  RedirectAfterLinkInput,
+  SocialCallbackInput,
+  TokenPair,
+  UnlinkSocialAccountInput,
+} from '@/types/user.types';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 
 @Injectable()
 export class SocialService {
   constructor(
-    private readonly config: ConfigService,
+    private readonly configService: ConfigService,
     private readonly tokenService: TokenService,
     @InjectRepository(User)
     private readonly userRepository: EntityRepository<User>,
@@ -28,12 +32,9 @@ export class SocialService {
   ) {}
 
   @LogExecutionTime()
-  async handleSocialCallbackResult(
-    user: AccessTokenPayload | undefined,
-    reply: FastifyReply,
-    error?: PassportAuthResultError,
-  ): Promise<void> {
-    const frontendOrigin = this.config.getOrThrow<string>('app.frontendOrigin');
+  async handleSocialCallbackResult(input: SocialCallbackInput): Promise<void> {
+    const { reply, error, user } = input;
+    const frontendOrigin = this.configService.getOrThrow<string>('app.frontendOrigin');
 
     if (!user) {
       reply.redirect(`${frontendOrigin}/login`);
@@ -46,31 +47,31 @@ export class SocialService {
       );
       return;
     }
-    const refreshTokenTtl = this.config.getOrThrow<number>('auth.refreshTokenTtl');
-    const tokens = await this.tokenService.generateTokens(user, refreshTokenTtl);
+    const refreshTokenTtl = this.configService.getOrThrow<number>('auth.refreshTokenTtl');
+    const tokens: TokenPair = await this.tokenService.generateTokens(user, refreshTokenTtl);
 
-    setAuthCookies(reply, tokens);
+    setAuthCookies({ reply, tokens });
     reply.redirect(`${frontendOrigin}/loginSuccess`);
   }
 
   @LogExecutionTime()
-  async redirectAfterLink(
-    reply: FastifyReply,
-    error: PassportAuthResultError,
-    successPath: '/userinfo',
-    failureMessage: '이미 연동된 계정입니다.',
-  ): Promise<void> {
-    const frontendOrigin = this.config.getOrThrow<string>('app.frontendOrigin');
-    const isAlreadyLinkedError = error instanceof AlreadyLinkedException;
+  async redirectAfterLink(input: RedirectAfterLinkInput): Promise<void> {
+    const { reply, error } = input;
+    const frontendOrigin = this.configService.getOrThrow<string>('app.frontendOrigin');
+    const successPath = this.configService.getOrThrow<string>('oauth.socialLinkRedirectUrl');
 
-    const query = isAlreadyLinkedError ? `?error=${encodeURIComponent(failureMessage)}` : '';
+    const failureMessage =
+      error instanceof AlreadyLinkedException ? error.message : '소셜 연동에 실패했습니다.';
+
+    const query = `?error=${encodeURIComponent(failureMessage)}`;
     const target = `${frontendOrigin}${successPath}${query}`;
 
     await reply.redirect(target);
   }
 
   @LogExecutionTime()
-  async unlinkSocialAccount(id: number, provider: 'google' | 'kakao' | 'naver'): Promise<void> {
+  async unlinkSocialAccount(input: UnlinkSocialAccountInput): Promise<void> {
+    const { id, provider } = input;
     const user = await this.userRepository.findOne(id, {
       fields: ['id'],
     });
@@ -119,8 +120,8 @@ export class SocialService {
       await axios.post('https://nid.naver.com/oauth2.0/token', null, {
         params: {
           grant_type: 'delete',
-          client_id: this.config.getOrThrow<string>('oauth.naver.clientId'),
-          client_secret: this.config.getOrThrow<string>('oauth.naver.clientSecret'),
+          client_id: this.configService.getOrThrow<string>('oauth.naver.clientId'),
+          client_secret: this.configService.getOrThrow<string>('oauth.naver.clientSecret'),
           access_token: token,
         },
       });

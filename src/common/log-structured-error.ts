@@ -7,7 +7,7 @@ export const setLogger = (loggerService: LoggerService): void => {
   logger = loggerService;
 };
 
-export const logError = (error: unknown, req: FastifyRequest): void => {
+export const logStructuredError = (error: unknown, req: FastifyRequest): void => {
   const err = error instanceof Error ? error : new Error(String(error) || 'Unknown error');
   const status = error instanceof HttpException ? error.getStatus() : 500;
   const level = getLogLevel(status);

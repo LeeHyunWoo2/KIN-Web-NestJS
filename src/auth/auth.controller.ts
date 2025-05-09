@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
@@ -9,9 +9,30 @@ import { TokenService } from '@/auth/token.service';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { RefreshToken } from '@/common/decorators/refresh-token.decorator';
-import { RefreshTokenMissingException } from '@/common/exceptions/token.exceptions';
+import {
+  AccessTokenMissingException,
+  EmailAlreadyExistsException,
+  InvalidCredentialsException,
+  RefreshTokenInvalidException,
+  RefreshTokenMismatchException,
+  RefreshTokenMissingException,
+  RefreshTokenNotFoundException,
+  UsernameAlreadyExistsException,
+  UserNotFoundException,
+} from '@/common/exceptions';
 import { CreateUserInput, DecodedUser, LoginUserInput, TokenPair } from '@/types/user.types';
 
+@ApiExtraModels(
+  AccessTokenMissingException,
+  EmailAlreadyExistsException,
+  InvalidCredentialsException,
+  RefreshTokenInvalidException,
+  RefreshTokenMismatchException,
+  RefreshTokenMissingException,
+  RefreshTokenNotFoundException,
+  UsernameAlreadyExistsException,
+  UserNotFoundException,
+)
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -24,14 +45,23 @@ export class AuthController {
   @HttpCode(201)
   @ApiOperation({ summary: '회원가입 (로컬)' })
   @ApiResponse({ status: 201, description: '회원가입 성공 (응답 본문 없음)' })
-  @ApiResponse({ status: 409, description: '이미 존재하는 사용자 (아이디 또는 이메일)' })
-  async register(@Body() dto: RegisterDto): Promise<void> {
+  @ApiResponse({
+    status: 409,
+    description: '이미 사용 중인 아이디',
+    type: UsernameAlreadyExistsException,
+  })
+  @ApiResponse({
+    status: 409,
+    description: '이미 사용 중인 이메일',
+    type: EmailAlreadyExistsException,
+  })
+  async register(@Body() registerDto: RegisterDto): Promise<void> {
     const input: CreateUserInput = {
-      username: dto.username,
-      email: dto.email,
-      password: dto.password,
-      name: dto.name,
-      marketingConsent: dto.marketingConsent,
+      username: registerDto.username,
+      email: registerDto.email,
+      password: registerDto.password,
+      name: registerDto.name,
+      marketingConsent: registerDto.marketingConsent,
     };
 
     await this.authService.registerUser(input);
@@ -48,14 +78,24 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: '아이디 또는 비밀번호 불일치' })
+  @ApiResponse({
+    status: 401,
+    description: '아이디 또는 비밀번호 불일치',
+    type: InvalidCredentialsException,
+  })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<{ success: boolean }> {
-    const tokens: TokenPair = await this.authService.loginUser(loginDto as LoginUserInput);
+    const input: LoginUserInput = {
+      username: loginDto.username,
+      password: loginDto.password,
+      rememberMe: loginDto.rememberMe,
+    };
 
-    setAuthCookies(reply, tokens);
+    const tokens: TokenPair = await this.authService.loginUser(input);
+
+    setAuthCookies({ reply, tokens });
     return { success: true };
   }
 
@@ -78,7 +118,7 @@ export class AuthController {
         const { id } = await this.tokenService.verifyRefreshToken(refreshToken);
         await this.tokenService.deleteRefreshTokenFromRedis(id);
       } catch {
-        // 무시하고 진행
+        // 무시하고 진행 (Redis 로직 실패와 상관없이 진행되어야 함)
       }
     }
 
@@ -86,6 +126,7 @@ export class AuthController {
       await this.tokenService.invalidateAccessToken(accessToken);
     }
 
+    // 토큰이 유효하지 않더라도 로그아웃 처리를 위해 쿠키는 항상 제거함
     reply.clearCookie('accessToken');
     reply.clearCookie('refreshToken');
   }
@@ -98,19 +139,31 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: '리프레시 토큰 누락 또는 유효하지 않음',
+    description: '리프레시 토큰 누락',
+    type: RefreshTokenMissingException,
+  })
+  @ApiResponse({
+    status: 401,
+    description: '리프레시 토큰이 유효하지 않음',
+    type: RefreshTokenInvalidException,
+  })
+  @ApiResponse({
+    status: 401,
+    description: '저장된 리프레시 토큰이 없음',
+    type: RefreshTokenNotFoundException,
+  })
+  @ApiResponse({
+    status: 401,
+    description: '저장된 토큰과 일치하지 않음',
+    type: RefreshTokenMismatchException,
   })
   async refresh(
     @RefreshToken() refreshToken: string,
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    if (!refreshToken) {
-      throw new RefreshTokenMissingException();
-    }
-
-    const tokens = await this.authService.refreshTokens(refreshToken);
-    setAuthCookies(reply, tokens);
+    const tokens: TokenPair = await this.authService.refreshTokens(refreshToken);
+    setAuthCookies({ reply, tokens });
   }
 
   @Get('session')
@@ -122,7 +175,7 @@ export class AuthController {
     description: 'AccessToken이 유효하면 사용자 기본 정보 반환',
     schema: {
       example: {
-        id: 1,
+        id: 1234567890,
         email: 'user@example.com',
         role: 'user',
       },
@@ -131,8 +184,9 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'AccessToken 누락 또는 무효',
+    type: AccessTokenMissingException,
   })
-  checkSession(@CurrentUserDecorator() user: DecodedUser) {
+  checkSession(@CurrentUserDecorator() user: DecodedUser): DecodedUser {
     return user;
   }
 }

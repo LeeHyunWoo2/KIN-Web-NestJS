@@ -1,15 +1,15 @@
-import { InvalidEmailTokenException } from '@/common/exceptions/auth.exceptions';
 import {
   AccessTokenBlacklistedException,
   AccessTokenInvalidException,
   AccessTokenMissingException,
+  InvalidEmailTokenException,
   NoLinkedAccountException,
   OAuthTokenGenerationFailedException,
   RefreshTokenInvalidException,
   RefreshTokenMismatchException,
   RefreshTokenNotFoundException,
   SaveRefreshTokenException,
-} from '@/common/exceptions/token.exceptions';
+} from '@/common/exceptions';
 import { AccessTokenPayload, SocialTokenUser } from '@/types/user.types';
 
 import { setupTokenServiceTest } from '../../test/utils/token-service.test-helper';

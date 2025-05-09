@@ -5,19 +5,19 @@ import { FastifyRequest } from 'fastify';
 import { Profile, Strategy } from 'passport-google-oauth20';
 
 import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
-import { AccessTokenPayload } from '@/types/user.types';
+import { AccessTokenPayload, CreateSocialUserInput } from '@/types/user.types';
 import { UserService } from '@/user/user.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
-    config: ConfigService,
+    configService: ConfigService,
     private readonly userService: UserService,
   ) {
     super({
-      clientID: config.getOrThrow<string>('oauth.google.clientId'),
-      clientSecret: config.getOrThrow<string>('oauth.google.clientSecret'),
-      callbackURL: config.getOrThrow<string>('oauth.google.callbackUrl'),
+      clientID: configService.getOrThrow<string>('oauth.google.clientId'),
+      clientSecret: configService.getOrThrow<string>('oauth.google.clientSecret'),
+      callbackURL: configService.getOrThrow<string>('oauth.google.callbackUrl'),
       passReqToCallback: true,
       scope: ['profile', 'email'],
     });
@@ -31,7 +31,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ): Promise<AccessTokenPayload> {
     const providerId = profile.id;
 
-    if (!profile.emails?.[0]?.value) {
+    const email = profile.emails?.[0]?.value;
+    if (!email) {
       throw new MissingSocialEmailException();
     }
 
@@ -40,13 +41,15 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       return existingUser;
     }
 
-    return await this.userService.createSocialUser({
+    const input: CreateSocialUserInput = {
       provider: 'google',
       providerId,
-      email: profile.emails[0].value,
+      email,
       name: profile.displayName,
-      profileIcon: profile.photos?.[0].value,
+      profileIcon: profile.photos?.[0]?.value,
       socialRefreshToken: refreshToken,
-    });
+    };
+
+    return await this.userService.createSocialUser(input);
   }
 }

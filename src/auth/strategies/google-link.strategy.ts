@@ -57,7 +57,7 @@ export class GoogleLinkStrategy extends PassportStrategy(Strategy, 'google-link'
       throw new AlreadyLinkedException();
     }
 
-    const googleAccountLink = this.socialAccountRepository.create({
+    const input = this.socialAccountRepository.create({
       user,
       provider: 'google',
       providerId: providerId,
@@ -66,7 +66,7 @@ export class GoogleLinkStrategy extends PassportStrategy(Strategy, 'google-link'
       updatedAt: new Date(),
     });
 
-    await this.socialAccountRepository.getEntityManager().persistAndFlush(googleAccountLink);
+    await this.socialAccountRepository.getEntityManager().persistAndFlush(input);
 
     return {
       id: user.id,

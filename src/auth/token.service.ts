@@ -4,18 +4,18 @@ import { JwtService } from '@nestjs/jwt';
 import { Redis } from 'ioredis';
 
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
-import { InvalidEmailTokenException } from '@/common/exceptions/auth.exceptions';
 import {
   AccessTokenBlacklistedException,
   AccessTokenInvalidException,
   AccessTokenMissingException,
+  InvalidEmailTokenException,
   NoLinkedAccountException,
   OAuthTokenGenerationFailedException,
   RefreshTokenInvalidException,
   RefreshTokenMismatchException,
   RefreshTokenNotFoundException,
   SaveRefreshTokenException,
-} from '@/common/exceptions/token.exceptions';
+} from '@/common/exceptions';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 import {
   AccessTokenPayload,
@@ -33,16 +33,16 @@ export class TokenService {
   constructor(
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
     private readonly jwtService: JwtService,
-    private readonly config: ConfigService,
+    private readonly configService: ConfigService,
   ) {
-    this.accessTokenSecret = config.getOrThrow<string>('auth.accessTokenSecret');
-    this.refreshTokenSecret = config.getOrThrow<string>('auth.refreshTokenSecret');
+    this.accessTokenSecret = configService.getOrThrow<string>('auth.accessTokenSecret');
+    this.refreshTokenSecret = configService.getOrThrow<string>('auth.refreshTokenSecret');
   }
 
   @LogExecutionTime()
   async generateTokens(payload: AccessTokenPayload, refreshTtl: number): Promise<TokenPair> {
     const accessToken = await this.jwtService.signAsync(payload, {
-      expiresIn: this.config.get<number>('auth.jwtExpiration'),
+      expiresIn: this.configService.get<number>('auth.jwtExpiration'),
     });
 
     const refreshToken = await this.jwtService.signAsync(
@@ -120,8 +120,8 @@ export class TokenService {
         const res = await axios.post<{ access_token: string }>(
           'https://oauth2.googleapis.com/token',
           {
-            client_id: this.config.getOrThrow<string>('oauth.clientId'),
-            client_secret: this.config.getOrThrow<string>('oauth.clientSecret'),
+            client_id: this.configService.getOrThrow<string>('oauth.clientId'),
+            client_secret: this.configService.getOrThrow<string>('oauth.clientSecret'),
             refresh_token: account.socialRefreshToken,
             grant_type: 'refresh_token',
           },

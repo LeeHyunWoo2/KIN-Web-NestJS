@@ -48,6 +48,8 @@ export const validationSchema = Joi.object({
   NAVER_CALLBACK_URL: Joi.string().uri().required(),
   NAVER_LINK_CALLBACK_URL: Joi.string().uri().required(),
 
+  SOCIAL_LINK_REDIRECT_URL: Joi.string().required(),
+
   POSTGRES_HOST: Joi.string().required(),
   POSTGRES_POR: Joi.number().required(),
   POSTGRES_USER: Joi.string().required(),

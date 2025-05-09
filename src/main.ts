@@ -8,7 +8,7 @@ import { FastifyServerOptions } from 'fastify';
 import { Logger } from 'nestjs-pino';
 
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
-import { setLogger } from '@/common/log-error';
+import { setLogger } from '@/common/log-structured-error';
 import { globalConfigService } from '@/config/global-config.service';
 
 import { AppModule } from './app.module';
@@ -31,10 +31,13 @@ async function bootstrap(): Promise<void> {
     .setTitle('Keep Idea Note API')
     .setDescription('회원 인증, 유저 정보 REST API')
     .setVersion('1.0.0')
-    .addCookieAuth('accessToken', {
-      type: 'apiKey',
-      in: 'cookie',
-      name: 'accessToken',
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'Authorization',
+      description: '64KcIO2GoOyKpCDqsJzrsJzsnpDqsIAg65Cg6rGw7JW8',
+      in: 'header',
     })
     .build();
 

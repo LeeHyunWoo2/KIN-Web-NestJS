@@ -5,7 +5,7 @@ import { FastifyRequest } from 'fastify';
 import { Profile, Strategy, StrategyOptionWithRequest } from 'passport-kakao';
 
 import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
-import { AccessTokenPayload } from '@/types/user.types';
+import { AccessTokenPayload, CreateSocialUserInput } from '@/types/user.types';
 import { UserService } from '@/user/user.service';
 
 interface KakaoProfileJson {
@@ -16,13 +16,13 @@ interface KakaoProfileJson {
 @Injectable()
 export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
   constructor(
-    config: ConfigService,
+    configService: ConfigService,
     private readonly userService: UserService,
   ) {
     super({
-      clientID: config.getOrThrow<string>('oauth.kakao.clientId'),
-      clientSecret: config.getOrThrow<string>('oauth.kakao.clientSecret'),
-      callbackURL: config.getOrThrow<string>('oauth.kakao.callbackUrl'),
+      clientID: configService.getOrThrow<string>('oauth.kakao.clientId'),
+      clientSecret: configService.getOrThrow<string>('oauth.kakao.clientSecret'),
+      callbackURL: configService.getOrThrow<string>('oauth.kakao.callbackUrl'),
       passReqToCallback: true,
       scope: ['profile_nickname', 'account_email', 'profile_image'],
     } as StrategyOptionWithRequest);
@@ -34,26 +34,28 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     refreshToken: string,
     profile: Profile,
   ): Promise<AccessTokenPayload> {
+    const providerId = profile.id;
     const { kakao_account, properties } = profile._json as KakaoProfileJson;
 
-    if (!kakao_account?.email) {
+    const email = kakao_account?.email;
+    if (!email) {
       throw new MissingSocialEmailException();
     }
-
-    const providerId = profile.id;
 
     const existingUser = await this.userService.findUserBySocialAccount('kakao', providerId);
     if (existingUser) {
       return existingUser;
     }
 
-    return await this.userService.createSocialUser({
+    const input: CreateSocialUserInput = {
       provider: 'kakao',
       providerId,
-      email: kakao_account.email,
+      email,
       name: profile.displayName,
       profileIcon: properties?.profile_image,
       socialRefreshToken: refreshToken,
-    });
+    };
+
+    return await this.userService.createSocialUser(input);
   }
 }

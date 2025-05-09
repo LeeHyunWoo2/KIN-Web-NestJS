@@ -4,7 +4,8 @@ import * as nodemailer from 'nodemailer';
 
 import { TokenService } from '@/auth/token.service';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
-import { EmailSendFailedException } from '@/common/exceptions/auth.exceptions';
+import { EmailSendFailedException } from '@/common/exceptions';
+import { SendVerificationEmailInput } from '@/types/user.types';
 
 @Injectable()
 export class EmailService {
@@ -14,7 +15,8 @@ export class EmailService {
   ) {}
 
   @LogExecutionTime()
-  async sendVerificationEmail(email: string): Promise<void> {
+  async sendVerificationEmail(input: SendVerificationEmailInput): Promise<void> {
+    const { email } = input;
     const token = this.tokenService.generateEmailVerificationToken(email);
 
     const verificationUrl = `${this.configService.getOrThrow<string>('app.frontendOrigin')}/verify-email?token=${token}`;

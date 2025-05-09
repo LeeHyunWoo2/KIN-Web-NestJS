@@ -1,13 +1,20 @@
 import { Controller, Delete, Get, Param, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { SocialService } from '@/auth/social.service';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
-import { DecodedUser } from '@/types/user.types';
+import { NoRemainingAuthMethodException, UserNotFoundException } from '@/common/exceptions';
+import {
+  DecodedUser,
+  RedirectAfterLinkInput,
+  SocialCallbackInput,
+  UnlinkSocialAccountInput,
+} from '@/types/user.types';
 
+@ApiExtraModels(UserNotFoundException, NoRemainingAuthMethodException)
 @ApiTags('Auth')
 @Controller('auth/social')
 export class SocialController {
@@ -42,8 +49,12 @@ export class SocialController {
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const { error, user } = req.authResult || {};
-    return this.socialService.handleSocialCallbackResult(user, reply, error);
+    const input: SocialCallbackInput = {
+      user: req.authResult?.user,
+      error: req.authResult?.error,
+      reply,
+    };
+    return this.socialService.handleSocialCallbackResult(input);
   }
 
   @Get('kakao/callback')
@@ -54,8 +65,12 @@ export class SocialController {
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const { error, user } = req.authResult || {};
-    return this.socialService.handleSocialCallbackResult(user, reply, error);
+    const input: SocialCallbackInput = {
+      user: req.authResult?.user,
+      error: req.authResult?.error,
+      reply,
+    };
+    return this.socialService.handleSocialCallbackResult(input);
   }
 
   @Get('naver/callback')
@@ -66,8 +81,12 @@ export class SocialController {
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const { error, user } = req.authResult || {};
-    return this.socialService.handleSocialCallbackResult(user, reply, error);
+    const input: SocialCallbackInput = {
+      user: req.authResult?.user,
+      error: req.authResult?.error,
+      reply,
+    };
+    return this.socialService.handleSocialCallbackResult(input);
   }
 
   /*
@@ -103,13 +122,11 @@ export class SocialController {
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const { error } = req.authResult || {};
-    await this.socialService.redirectAfterLink(
+    const input: RedirectAfterLinkInput = {
+      error: req.authResult?.error,
       reply,
-      error,
-      '/userinfo',
-      '이미 연동된 계정입니다.',
-    );
+    };
+    await this.socialService.redirectAfterLink(input);
   }
 
   @Get('link/kakao/callback')
@@ -121,13 +138,11 @@ export class SocialController {
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const { error } = req.authResult || {};
-    await this.socialService.redirectAfterLink(
+    const input: RedirectAfterLinkInput = {
+      error: req.authResult?.error,
       reply,
-      error,
-      '/userinfo',
-      '이미 연동된 계정입니다.',
-    );
+    };
+    await this.socialService.redirectAfterLink(input);
   }
 
   @Get('link/naver/callback')
@@ -139,13 +154,11 @@ export class SocialController {
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
-    const { error } = req.authResult || {};
-    await this.socialService.redirectAfterLink(
+    const input: RedirectAfterLinkInput = {
+      error: req.authResult?.error,
       reply,
-      error,
-      '/userinfo',
-      '이미 연동된 계정입니다.',
-    );
+    };
+    await this.socialService.redirectAfterLink(input);
   }
 
   /*
@@ -160,13 +173,23 @@ export class SocialController {
     description: '연동 해제 성공 (응답 본문 없음)',
   })
   @ApiResponse({
+    status: 404,
+    description: '유저를 찾을 수 없음',
+    type: UserNotFoundException,
+  })
+  @ApiResponse({
     status: 400,
-    description: '유효하지 않은 provider일 경우, 소셜 계정의 경우 연동된 계정이 1개뿐일 경우',
+    description: '최소 하나 이상의 로그인 방식이 유지되어야 함',
+    type: NoRemainingAuthMethodException,
   })
   async unlinkSocial(
     @CurrentUserDecorator() user: DecodedUser,
     @Param('provider') provider: 'google' | 'kakao' | 'naver',
   ): Promise<void> {
-    await this.socialService.unlinkSocialAccount(user.id, provider);
+    const input: UnlinkSocialAccountInput = {
+      id: user.id,
+      provider,
+    };
+    await this.socialService.unlinkSocialAccount(input);
   }
 }

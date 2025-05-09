@@ -19,4 +19,5 @@ export const oauthConfig = registerAs('oauth', () => ({
     callbackUrl: process.env.NAVER_CALLBACK_URL,
     linkCallbackUrl: process.env.NAVER_LINK_CALLBACK_URL,
   },
+  socialLinkRedirectUrl: process.env.SOCIAL_LINK_REDIRECT_URL,
 }));

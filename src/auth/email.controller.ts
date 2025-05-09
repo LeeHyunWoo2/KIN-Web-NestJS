@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiExtraModels, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
   RequestEmailTokenDto,
@@ -8,7 +8,10 @@ import {
 } from '@/auth/dto/email-token.dto';
 import { EmailService } from '@/auth/email.service';
 import { TokenService } from '@/auth/token.service';
+import { EmailSendFailedException, InvalidEmailTokenException } from '@/common/exceptions';
+import { SendVerificationEmailInput } from '@/types/user.types';
 
+@ApiExtraModels(EmailSendFailedException, InvalidEmailTokenException)
 @ApiTags('Auth')
 @Controller('auth/email')
 export class EmailController {
@@ -27,11 +30,13 @@ export class EmailController {
   @ApiResponse({
     status: 500,
     description: '메일 전송 실패 (서버 오류)',
+    type: EmailSendFailedException,
   })
   async sendVerificationEmail(
-    @Body() dto: RequestEmailTokenDto,
+    @Body() requestEmailTokenDto: RequestEmailTokenDto,
   ): Promise<SendVerificationEmailResponseDto> {
-    await this.emailService.sendVerificationEmail(dto.email);
+    const input: SendVerificationEmailInput = { email: requestEmailTokenDto.email };
+    await this.emailService.sendVerificationEmail(input);
     return { message: '이메일 인증 링크가 전송되었습니다.' };
   }
 
@@ -51,6 +56,7 @@ export class EmailController {
   @ApiResponse({
     status: 400,
     description: '토큰이 유효하지 않음 또는 만료됨',
+    type: InvalidEmailTokenException,
   })
   async verifyEmailToken(@Query('token') token: string): Promise<VerifyEmailTokenResponseDto> {
     const email = await this.tokenService.verifyEmailVerificationToken(token);

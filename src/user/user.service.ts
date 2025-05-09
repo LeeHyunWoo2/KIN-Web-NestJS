@@ -13,15 +13,19 @@ import {
   SamePasswordUsedException,
   TestAccountMutationException,
   UserNotFoundException,
-} from '@/common/exceptions/user.exceptions';
+} from '@/common/exceptions';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 import {
   AccessTokenPayload,
+  AddLocalAccountInput,
+  CreateSocialUserInput,
+  DeleteUserInput,
   FindUserQuery,
   FindUserQueryData,
   PublicUserProfile,
+  ResetPasswordInput,
   SafeUserInfo,
-  UpdateUserProfileData,
+  UpdateUserInput,
 } from '@/types/user.types';
 
 import { SocialAccount } from './entity/social-account.entity';
@@ -137,7 +141,8 @@ export class UserService {
   }
 
   @LogExecutionTime()
-  async updateUser(id: number, data: UpdateUserProfileData): Promise<Partial<PublicUserProfile>> {
+  async updateUser(input: UpdateUserInput): Promise<Partial<PublicUserProfile>> {
+    const { id, data } = input;
     this.ensureNotTestAccount(id);
 
     const user = await this.userRepository.findOne(id, {
@@ -171,7 +176,8 @@ export class UserService {
   }
 
   @LogExecutionTime()
-  async resetPassword(email: string, newPassword: string): Promise<void> {
+  async resetPassword(input: ResetPasswordInput): Promise<void> {
+    const { email, newPassword } = input;
     const user = await this.userRepository.findOne(
       { email },
       { fields: ['id', 'email', 'password', 'passwordHistory'] },
@@ -185,13 +191,13 @@ export class UserService {
     const reusedPassword = user.passwordHistory.find((record) =>
       bcrypt.compareSync(newPassword, record.password),
     );
+
     if (reusedPassword) {
       const timeDifference = this.calculateDateDifference(reusedPassword.changedAt);
-      throw new PasswordReusedException(`${timeDifference}에 사용된 비밀번호입니다.`);
+      throw new PasswordReusedException(timeDifference);
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
     user.password = hashedPassword;
     user.passwordHistory = user.passwordHistory
       .slice(-4)
@@ -200,14 +206,10 @@ export class UserService {
     await this.userRepository.getEntityManager().persistAndFlush(user);
   }
 
-  async addLocalAccount(
-    id: number,
-    username: string,
-    email: string,
-    password: string,
-  ): Promise<void> {
-    const user = await this.userRepository.findOne(id);
+  async addLocalAccount(input: AddLocalAccountInput): Promise<void> {
+    const { id, username, email, password } = input;
 
+    const user = await this.userRepository.findOne(id);
     if (!user) throw new UserNotFoundException();
 
     const hasLocalAccount = await this.socialAccountRepository.findOne({
@@ -236,14 +238,7 @@ export class UserService {
     await this.socialAccountRepository.getEntityManager().persistAndFlush(localAccount);
   }
 
-  async createSocialUser(input: {
-    provider: 'google' | 'kakao' | 'naver';
-    providerId: string;
-    email: string;
-    name: string;
-    profileIcon?: string;
-    socialRefreshToken?: string;
-  }): Promise<AccessTokenPayload> {
+  async createSocialUser(input: CreateSocialUserInput): Promise<AccessTokenPayload> {
     const user = this.userRepository.create({
       email: input.email,
       name: input.name,
@@ -277,7 +272,8 @@ export class UserService {
     };
   }
 
-  async deleteUser(id: number, accessToken?: string, refreshToken?: string): Promise<void> {
+  async deleteUser(input: DeleteUserInput): Promise<void> {
+    const { id, refreshToken, accessToken } = input;
     this.ensureNotTestAccount(id);
 
     if (refreshToken) {

@@ -4,8 +4,8 @@ import {
   EmailAlreadyExistsException,
   InvalidCredentialsException,
   UsernameAlreadyExistsException,
-} from '@/common/exceptions/auth.exceptions';
-import { UserNotFoundException } from '@/common/exceptions/user.exceptions';
+  UserNotFoundException,
+} from '@/common/exceptions';
 
 import { setupAuthServiceTest } from '../../test/utils/auth-service.test-helper';
 

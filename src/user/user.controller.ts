@@ -1,11 +1,24 @@
 import { Body, Controller, Delete, Get, Post, Put, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiExtraModels, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { RefreshToken } from '@/common/decorators/refresh-token.decorator';
-import { DecodedUser } from '@/types/user.types';
+import {
+  AlreadyHasLocalAccountException,
+  PasswordReusedException,
+  SamePasswordUsedException,
+  TestAccountMutationException,
+  UserNotFoundException,
+} from '@/common/exceptions';
+import {
+  AddLocalAccountInput,
+  DecodedUser,
+  DeleteUserInput,
+  ResetPasswordInput,
+  UpdateUserInput,
+} from '@/types/user.types';
 import { ResetPasswordDto } from '@/user/dto/user-auth.dto';
 import {
   AddLocalAccountDto,
@@ -16,6 +29,13 @@ import {
 import { FindUserDto, FindUserResultDto } from '@/user/dto/user-search.dto';
 import { UserService } from '@/user/user.service';
 
+@ApiExtraModels(
+  UserNotFoundException,
+  SamePasswordUsedException,
+  PasswordReusedException,
+  AlreadyHasLocalAccountException,
+  TestAccountMutationException,
+)
 @ApiTags('User')
 @Controller('user')
 export class UserController {
@@ -29,6 +49,11 @@ export class UserController {
     status: 200,
     description: '유저 공개 프로필 반환',
     type: PublicUserProfileDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '유저를 찾을 수 없음',
+    type: UserNotFoundException,
   })
   async getPublicUserProfile(
     @CurrentUserDecorator() user: DecodedUser,
@@ -44,6 +69,11 @@ export class UserController {
     status: 200,
     description: '유저 전체 정보 반환',
     type: UserInfoResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '유저를 찾을 수 없음',
+    type: UserNotFoundException,
   })
   async getUserInfo(@CurrentUserDecorator() user: DecodedUser): Promise<UserInfoResponseDto> {
     return this.userService.getUserInfo(user.id);
@@ -63,11 +93,25 @@ export class UserController {
       },
     },
   })
+  @ApiResponse({
+    status: 403,
+    description: '테스트 계정은 변경할 수 없음',
+    type: TestAccountMutationException,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '유저를 찾을 수 없음',
+    type: UserNotFoundException,
+  })
   async updateUser(
     @CurrentUserDecorator() user: DecodedUser,
     @Body() updatedData: UpdateUserDto,
   ): Promise<Partial<PublicUserProfileDto>> {
-    return this.userService.updateUser(user.id, updatedData);
+    const input: UpdateUserInput = {
+      id: user.id,
+      data: updatedData,
+    };
+    return this.userService.updateUser(input);
   }
 
   @Put('password')
@@ -78,10 +122,25 @@ export class UserController {
   })
   @ApiResponse({
     status: 400,
-    description: '기존과 동일한 비밀번호 또는 재사용된 비밀번호',
+    description: '기존과 동일한 비밀번호',
+    type: SamePasswordUsedException,
   })
-  async resetPassword(@Body() body: ResetPasswordDto): Promise<void> {
-    return this.userService.resetPassword(body.newPassword, body.email);
+  @ApiResponse({
+    status: 400,
+    description: '최근 사용된 비밀번호 재사용',
+    type: PasswordReusedException,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '유저를 찾을 수 없음',
+    type: UserNotFoundException,
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<void> {
+    const input: ResetPasswordInput = {
+      email: resetPasswordDto.email,
+      newPassword: resetPasswordDto.newPassword,
+    };
+    return this.userService.resetPassword(input);
   }
 
   @Post('find')
@@ -91,8 +150,8 @@ export class UserController {
     description: '유저 존재 여부 및 관련 정보 반환',
     type: FindUserResultDto,
   })
-  async findUserByInput(@Body() dto: FindUserDto): Promise<FindUserResultDto> {
-    return this.userService.findUserByInput(dto);
+  async findUserByInput(@Body() findUserDto: FindUserDto): Promise<FindUserResultDto> {
+    return this.userService.findUserByInput(findUserDto);
   }
 
   @Post('change-local')
@@ -106,12 +165,24 @@ export class UserController {
   @ApiResponse({
     status: 409,
     description: '이미 로컬 계정이 존재함',
+    type: AlreadyHasLocalAccountException,
+  })
+  @ApiResponse({
+    status: 404,
+    description: '유저를 찾을 수 없음',
+    type: UserNotFoundException,
   })
   async addLocalAccount(
     @CurrentUserDecorator() user: DecodedUser,
     @Body() dto: AddLocalAccountDto,
   ): Promise<void> {
-    return this.userService.addLocalAccount(user.id, dto.username, dto.email, dto.password);
+    const input: AddLocalAccountInput = {
+      id: user.id,
+      username: dto.username,
+      email: dto.email,
+      password: dto.password,
+    };
+    return this.userService.addLocalAccount(input);
   }
 
   @Delete()
@@ -122,6 +193,11 @@ export class UserController {
     status: 200,
     description: '탈퇴 성공 (쿠키 제거, 응답 본문 없음)',
   })
+  @ApiResponse({
+    status: 403,
+    description: '테스트 계정은 삭제할 수 없음',
+    type: TestAccountMutationException,
+  })
   async deleteUser(
     @CurrentUserDecorator() user: DecodedUser,
     @Req() req: FastifyRequest,
@@ -129,7 +205,13 @@ export class UserController {
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<void> {
     const { accessToken } = req.cookies;
-    await this.userService.deleteUser(user.id, accessToken, refreshToken);
+    const input: DeleteUserInput = {
+      id: user.id,
+      accessToken,
+      refreshToken,
+    };
+    await this.userService.deleteUser(input);
+
     reply.clearCookie('accessToken');
     reply.clearCookie('refreshToken');
   }

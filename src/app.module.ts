@@ -22,13 +22,13 @@ import { UserModule } from './user/user.module';
     MikroOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         driver: PostgreSqlDriver,
-        host: config.getOrThrow('postgres.host'),
-        port: config.getOrThrow('postgres.port'),
-        dbName: config.getOrThrow('postgres.dbName'),
-        user: config.getOrThrow('postgres.user'),
-        password: config.getOrThrow('postgres.password'),
+        host: configService.getOrThrow('postgres.host'),
+        port: configService.getOrThrow('postgres.port'),
+        dbName: configService.getOrThrow('postgres.dbName'),
+        user: configService.getOrThrow('postgres.user'),
+        password: configService.getOrThrow('postgres.password'),
         autoLoadEntities: true,
       }),
     }),

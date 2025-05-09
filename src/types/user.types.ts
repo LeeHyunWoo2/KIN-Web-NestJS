@@ -1,3 +1,4 @@
+import { FastifyReply } from 'fastify';
 import { JwtPayload } from 'jsonwebtoken';
 
 export interface UserSnapshot {
@@ -32,6 +33,38 @@ export interface SocialAccount {
   socialRefreshToken?: string;
 }
 
+export interface ResetPasswordInput {
+  email: string;
+  newPassword: string;
+}
+
+export interface AddLocalAccountInput {
+  id: number;
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface UpdateUserInput {
+  id: number;
+  data: UpdateUserProfileData;
+}
+
+export interface CreateSocialUserInput {
+  provider: 'google' | 'kakao' | 'naver';
+  providerId: string;
+  email: string;
+  name: string;
+  profileIcon?: string;
+  socialRefreshToken?: string;
+}
+
+export interface DeleteUserInput {
+  id: number;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
 export type UserRole = 'user' | 'admin';
 
 export interface AccessTokenPayload extends JwtPayload {
@@ -47,6 +80,22 @@ export interface RefreshTokenPayload extends JwtPayload {
 
 export interface SocialTokenUser {
   socialAccounts: SocialAccount[];
+}
+
+export interface SocialCallbackInput {
+  user: AccessTokenPayload | undefined;
+  reply: FastifyReply;
+  error?: PassportAuthResultError;
+}
+
+export interface RedirectAfterLinkInput {
+  reply: FastifyReply;
+  error: PassportAuthResultError;
+}
+
+export interface UnlinkSocialAccountInput {
+  id: number;
+  provider: 'google' | 'kakao' | 'naver';
 }
 
 export interface GenerateOAuthToken {
@@ -69,6 +118,10 @@ export interface TokenPair {
 export type PublicUserProfile = Pick<UserSnapshot, 'name' | 'email' | 'profileIcon' | 'role'> & {
   id: number;
 };
+
+export interface SendVerificationEmailInput {
+  email: string;
+}
 
 export interface CreateUserInput {
   username: string;

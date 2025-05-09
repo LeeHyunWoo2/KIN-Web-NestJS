@@ -21,9 +21,9 @@ export class SamePasswordUsedException extends BadRequestException {
 }
 
 export class PasswordReusedException extends BadRequestException {
-  constructor(message: string) {
+  constructor(timeDifference: string) {
     super({
-      message,
+      message: `${timeDifference}에 사용된 비밀번호입니다.`,
       code: ExceptionCode.PASSWORD_REUSED,
     });
   }

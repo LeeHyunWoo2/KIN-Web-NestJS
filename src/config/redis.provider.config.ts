@@ -7,11 +7,11 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
 export const RedisProvider: Provider = {
   provide: REDIS_CLIENT,
   inject: [ConfigService],
-  useFactory: (config: ConfigService) => {
+  useFactory: (configService: ConfigService) => {
     const client = new Redis({
-      host: config.getOrThrow<string>('redis.host'),
-      port: config.getOrThrow<number>('redis.port'),
-      password: config.get<string>('redis.password'),
+      host: configService.getOrThrow<string>('redis.host'),
+      port: configService.getOrThrow<number>('redis.port'),
+      password: configService.get<string>('redis.password'),
       db: 0,
     });
 

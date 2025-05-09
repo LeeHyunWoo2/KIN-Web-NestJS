@@ -5,19 +5,19 @@ import { FastifyRequest } from 'fastify';
 import { Profile, Strategy, StrategyOptionWithRequest } from 'passport-naver';
 
 import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
-import { AccessTokenPayload } from '@/types/user.types';
+import { AccessTokenPayload, CreateSocialUserInput } from '@/types/user.types';
 import { UserService } from '@/user/user.service';
 
 @Injectable()
 export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
   constructor(
-    config: ConfigService,
+    configService: ConfigService,
     private readonly userService: UserService,
   ) {
     super({
-      clientID: config.getOrThrow<string>('oauth.naver.clientId'),
-      clientSecret: config.getOrThrow<string>('oauth.naver.clientSecret'),
-      callbackURL: config.getOrThrow<string>('oauth.naver.callbackUrl'),
+      clientID: configService.getOrThrow<string>('oauth.naver.clientId'),
+      clientSecret: configService.getOrThrow<string>('oauth.naver.clientSecret'),
+      callbackURL: configService.getOrThrow<string>('oauth.naver.callbackUrl'),
       passReqToCallback: true,
       scope: ['profile_nickname', 'account_email', 'profile_image'],
     } as StrategyOptionWithRequest);
@@ -30,23 +30,32 @@ export class NaverStrategy extends PassportStrategy(Strategy, 'naver') {
     profile: Profile,
   ): Promise<AccessTokenPayload> {
     const providerId = profile.id;
+    const profileJson = profile._json as {
+      email: string;
+      profile_image?: string;
+    };
 
-    if (!profile._json.email) {
+    const email = profileJson?.email;
+    if (!email) {
       throw new MissingSocialEmailException();
     }
+
+    const profileIcon = profileJson?.profile_image;
 
     const existingUser = await this.userService.findUserBySocialAccount('naver', providerId);
     if (existingUser) {
       return existingUser;
     }
 
-    return await this.userService.createSocialUser({
+    const input: CreateSocialUserInput = {
       provider: 'naver',
       providerId,
-      email: profile._json.email,
+      email,
       name: profile.displayName,
-      profileIcon: profile._json.profile_image,
+      profileIcon,
       socialRefreshToken: refreshToken,
-    });
+    };
+
+    return await this.userService.createSocialUser(input);
   }
 }

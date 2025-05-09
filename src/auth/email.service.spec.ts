@@ -4,7 +4,7 @@ jest.mock('nodemailer', () => ({
   createTransport: createTransportMock,
 }));
 
-import { EmailSendFailedException } from '@/common/exceptions/auth.exceptions';
+import { EmailSendFailedException } from '@/common/exceptions';
 
 import { setupEmailServiceTest } from '../../test/utils/email-service.test-helper';
 
@@ -15,7 +15,7 @@ describe('EmailService', () => {
 
       const { emailService, config, tokenService } = await setupEmailServiceTest();
 
-      const result = await emailService.sendVerificationEmail('test@email.com');
+      const result = await emailService.sendVerificationEmail({ email: 'test@email.com' });
 
       const expectedToken = 'email-token';
       const expectedUrl = `${config.getOrThrow('app.frontendOrigin')}/verify-email?token=${expectedToken}`;
@@ -44,7 +44,7 @@ describe('EmailService', () => {
 
       const { emailService } = await setupEmailServiceTest();
 
-      await expect(emailService.sendVerificationEmail('fail@email.com')).rejects.toThrow(
+      await expect(emailService.sendVerificationEmail({ email: 'fail@email.com' })).rejects.toThrow(
         EmailSendFailedException,
       );
     });

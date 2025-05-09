@@ -57,7 +57,7 @@ export class KakaoLinkStrategy extends PassportStrategy(Strategy, 'kakao-link') 
       throw new AlreadyLinkedException();
     }
 
-    const kakaoAccountLink = this.socialAccountRepository.create({
+    const input = this.socialAccountRepository.create({
       user,
       provider: 'kakao',
       providerId: providerId,
@@ -66,7 +66,7 @@ export class KakaoLinkStrategy extends PassportStrategy(Strategy, 'kakao-link') 
       updatedAt: new Date(),
     });
 
-    await this.socialAccountRepository.getEntityManager().persistAndFlush(kakaoAccountLink);
+    await this.socialAccountRepository.getEntityManager().persistAndFlush(input);
 
     return {
       id: user.id,

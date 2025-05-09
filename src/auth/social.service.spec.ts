@@ -1,8 +1,13 @@
-import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import {
+  AlreadyLinkedException,
   NoRemainingAuthMethodException,
   UserNotFoundException,
-} from '@/common/exceptions/user.exceptions';
+} from '@/common/exceptions';
+import {
+  RedirectAfterLinkInput,
+  SocialCallbackInput,
+  UnlinkSocialAccountInput,
+} from '@/types/user.types';
 
 import { setupSocialServiceTest } from '../../test/utils/social-service.test-helper';
 
@@ -27,7 +32,12 @@ describe('SocialService', () => {
     it('user가 undefined이면 로그인 페이지로 리다이렉트 해야 합니다.', async () => {
       const { socialService, config } = await setupSocialServiceTest();
 
-      await socialService.handleSocialCallbackResult(undefined, reply);
+      const input: SocialCallbackInput = {
+        user: undefined,
+        reply,
+      };
+
+      await socialService.handleSocialCallbackResult(input);
 
       expect(reply.redirect).toHaveBeenCalledWith(
         `${config.getOrThrow('app.frontendOrigin')}/login`,
@@ -37,13 +47,13 @@ describe('SocialService', () => {
     it('에러 코드가 11000이면 이미 가입된 이메일 에러 메시지로 리다이렉트 해야 합니다.', async () => {
       const { socialService, config } = await setupSocialServiceTest();
 
-      const error = { code: 11000 };
-
-      await socialService.handleSocialCallbackResult(
-        { id: 1, email: 'test', role: 'user' },
+      const input: SocialCallbackInput = {
+        user: { id: 1, email: 'test', role: 'user' },
+        error: { code: 11000 },
         reply,
-        error,
-      );
+      };
+
+      await socialService.handleSocialCallbackResult(input);
 
       expect(reply.redirect).toHaveBeenCalledWith(
         `${config.getOrThrow('app.frontendOrigin')}/login?error=${encodeURIComponent(
@@ -70,10 +80,12 @@ describe('SocialService', () => {
         },
       });
 
-      await socialService.handleSocialCallbackResult(
-        { id: 1, email: 'test@email.com', role: 'user' },
-        replyWithCookie as any,
-      );
+      const input: SocialCallbackInput = {
+        user: { id: 1, email: 'test@email.com', role: 'user' },
+        reply: replyWithCookie as any,
+      };
+
+      await socialService.handleSocialCallbackResult(input);
 
       expect(tokenService.generateTokens).toHaveBeenCalled();
       expect(replyWithCookie.redirect).toHaveBeenCalledWith(
@@ -93,29 +105,38 @@ describe('SocialService', () => {
     it('AlreadyLinkedException이면 실패 메시지를 쿼리로 포함하여 리다이렉트 해야 합니다.', async () => {
       const { socialService, config } = await setupSocialServiceTest();
 
-      const error = new AlreadyLinkedException();
-      const failureMessage = '이미 연동된 계정입니다.';
+      const input: RedirectAfterLinkInput = {
+        error: new AlreadyLinkedException(),
+        reply,
+      };
 
-      await socialService.redirectAfterLink(reply, error, '/userinfo', failureMessage);
+      await socialService.redirectAfterLink(input);
 
       expect(reply.redirect).toHaveBeenCalledWith(
-        `${config.getOrThrow('app.frontendOrigin')}/userinfo?error=${encodeURIComponent(failureMessage)}`,
+        `${config.getOrThrow('app.frontendOrigin')}${config.getOrThrow('oauth.socialLinkRedirectUrl')}?error=${encodeURIComponent(
+          '이미 연동된 계정입니다.',
+        )}`,
       );
     });
 
     it('기타 오류일 경우 쿼리 없이 successPath로 리다이렉트 해야 합니다.', async () => {
       const { socialService, config } = await setupSocialServiceTest();
 
-      const genericError = new Error('error');
-      const failureMessage = '이미 연동된 계정입니다.';
+      const input: RedirectAfterLinkInput = {
+        error: new Error('error'),
+        reply,
+      };
 
-      await socialService.redirectAfterLink(reply, genericError, '/userinfo', failureMessage);
+      await socialService.redirectAfterLink(input);
 
       expect(reply.redirect).toHaveBeenCalledWith(
-        `${config.getOrThrow('app.frontendOrigin')}/userinfo`,
+        `${config.getOrThrow('app.frontendOrigin')}${config.getOrThrow('oauth.socialLinkRedirectUrl')}?error=${encodeURIComponent(
+          '소셜 연동에 실패했습니다.',
+        )}`,
       );
     });
   });
+
   describe('unlinkSocialAccount', () => {
     it('유저가 없으면 UserNotFoundException을 던져야 합니다.', async () => {
       const { socialService, userRepository } = await setupSocialServiceTest({
@@ -123,10 +144,8 @@ describe('SocialService', () => {
           findOne: jest.fn().mockResolvedValue(null),
         },
       });
-
-      await expect(socialService.unlinkSocialAccount(1, 'google')).rejects.toThrow(
-        UserNotFoundException,
-      );
+      const input: UnlinkSocialAccountInput = { id: 1, provider: 'google' };
+      await expect(socialService.unlinkSocialAccount(input)).rejects.toThrow(UserNotFoundException);
       expect(userRepository.findOne).toHaveBeenCalledWith(1, { fields: ['id'] });
     });
     it('남은 소셜 계정이 없으면 NoRemainingAuthMethodException을 던져야 합니다.', async () => {
@@ -141,8 +160,8 @@ describe('SocialService', () => {
             find: jest.fn().mockResolvedValue([]),
           },
         });
-
-      await expect(socialService.unlinkSocialAccount(1, 'google')).rejects.toThrow(
+      const input: UnlinkSocialAccountInput = { id: 1, provider: 'google' };
+      await expect(socialService.unlinkSocialAccount(input)).rejects.toThrow(
         NoRemainingAuthMethodException,
       );
       expect(userRepository.findOne).toHaveBeenCalled();
@@ -183,8 +202,8 @@ describe('SocialService', () => {
           generateOAuthToken: jest.fn().mockResolvedValue('social-token'),
         },
       });
-
-      await socialService.unlinkSocialAccount(1, 'google');
+      const input: UnlinkSocialAccountInput = { id: 1, provider: 'google' };
+      await socialService.unlinkSocialAccount(input);
 
       expect(tokenService.generateOAuthToken).toHaveBeenCalledWith({
         provider: 'google',
@@ -222,8 +241,8 @@ describe('SocialService', () => {
           generateOAuthToken: jest.fn().mockResolvedValue('kakao-token'),
         },
       });
-
-      await socialService.unlinkSocialAccount(1, 'kakao');
+      const input: UnlinkSocialAccountInput = { id: 1, provider: 'kakao' };
+      await socialService.unlinkSocialAccount(input);
 
       const axios = (await import('axios')).default;
       expect(axios.post).toHaveBeenCalledWith('https://kapi.kakao.com/v1/user/unlink', null, {
@@ -258,8 +277,8 @@ describe('SocialService', () => {
           'oauth.naver.clientSecret': 'naver-client-secret',
         },
       });
-
-      await socialService.unlinkSocialAccount(1, 'naver');
+      const input: UnlinkSocialAccountInput = { id: 1, provider: 'naver' };
+      await socialService.unlinkSocialAccount(input);
 
       const axios = (await import('axios')).default;
       expect(axios.post).toHaveBeenCalledWith('https://nid.naver.com/oauth2.0/token', null, {

@@ -6,7 +6,14 @@ import {
   SamePasswordUsedException,
   TestAccountMutationException,
   UserNotFoundException,
-} from '@/common/exceptions/user.exceptions';
+} from '@/common/exceptions';
+import {
+  AddLocalAccountInput,
+  CreateSocialUserInput,
+  DeleteUserInput,
+  ResetPasswordInput,
+  UpdateUserInput,
+} from '@/types/user.types';
 import { User } from '@/user/entity/user.entity';
 
 import { setupUserServiceTest } from '../../test/utils/user-service.test-helper';
@@ -272,16 +279,20 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue(null),
         },
       });
-
-      await expect(userService.updateUser(userId, updatedInput)).rejects.toThrow(
-        UserNotFoundException,
-      );
+      const input: UpdateUserInput = {
+        id: userId,
+        data: updatedInput,
+      };
+      await expect(userService.updateUser(input)).rejects.toThrow(UserNotFoundException);
     });
 
     it('테스트 계정이면 예외를 던져야 합니다', async () => {
       const { userService } = await setupUserServiceTest({});
-
-      await expect(userService.updateUser(123456789, updatedInput)).rejects.toThrow(
+      const input: UpdateUserInput = {
+        id: 123456789,
+        data: updatedInput,
+      };
+      await expect(userService.updateUser(input)).rejects.toThrow(
         new Error('테스트 계정은 변경할 수 없습니다.'),
       );
     });
@@ -309,8 +320,11 @@ describe('UserService', () => {
           expire: jest.fn(),
         },
       });
-
-      const result = await userService.updateUser(userId, updatedInput);
+      const input: UpdateUserInput = {
+        id: userId,
+        data: updatedInput,
+      };
+      const result = await userService.updateUser(input);
 
       expect(redisSetMock).toHaveBeenCalledWith(
         `publicProfile:${userId}`,
@@ -335,8 +349,11 @@ describe('UserService', () => {
           expire: jest.fn(),
         },
       });
-
-      const result = await userService.updateUser(userId, updatedInput);
+      const input: UpdateUserInput = {
+        id: userId,
+        data: updatedInput,
+      };
+      const result = await userService.updateUser(input);
 
       expect(redisSetMock).toHaveBeenCalledWith(
         `publicProfile:${userId}`,
@@ -366,10 +383,11 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue(null),
         },
       });
-
-      await expect(userService.resetPassword(email, newPassword)).rejects.toThrow(
-        UserNotFoundException,
-      );
+      const input: ResetPasswordInput = {
+        email: email,
+        newPassword: newPassword,
+      };
+      await expect(userService.resetPassword(input)).rejects.toThrow(UserNotFoundException);
     });
 
     it('입력된 비밀번호가 현재 비밀번호와 같으면 예외를 던져야 합니다', async () => {
@@ -382,10 +400,11 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue(user),
         },
       });
-
-      await expect(userService.resetPassword(email, newPassword)).rejects.toThrow(
-        SamePasswordUsedException,
-      );
+      const input: ResetPasswordInput = {
+        email: email,
+        newPassword: newPassword,
+      };
+      await expect(userService.resetPassword(input)).rejects.toThrow(SamePasswordUsedException);
     });
 
     it('입력된 비밀번호가 과거에 사용된 비밀번호와 같으면 예외를 던져야 합니다', async () => {
@@ -401,10 +420,11 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue(user),
         },
       });
-
-      await expect(userService.resetPassword(email, newPassword)).rejects.toThrow(
-        PasswordReusedException,
-      );
+      const input: ResetPasswordInput = {
+        email: email,
+        newPassword: newPassword,
+      };
+      await expect(userService.resetPassword(input)).rejects.toThrow(PasswordReusedException);
     });
 
     it('정상적인 요청이면 비밀번호를 해싱하고 저장해야 합니다', async () => {
@@ -422,8 +442,11 @@ describe('UserService', () => {
           getEntityManager: jest.fn().mockReturnValue({ persistAndFlush: persist }),
         },
       });
-
-      await userService.resetPassword(email, newPassword);
+      const input: ResetPasswordInput = {
+        email: email,
+        newPassword: newPassword,
+      };
+      await userService.resetPassword(input);
 
       expect(user.password).toBe(hashedPassword);
       expect(user.passwordHistory?.length).toBe(1);
@@ -461,9 +484,12 @@ describe('UserService', () => {
             }),
           },
         });
-
-        await expect(userService.resetPassword(email, password)).rejects.toThrow(
-          new PasswordReusedException(`${expected}에 사용된 비밀번호입니다.`),
+        const input: ResetPasswordInput = {
+          email: email,
+          newPassword: password,
+        };
+        await expect(userService.resetPassword(input)).rejects.toThrow(
+          new PasswordReusedException(expected),
         );
       });
     });
@@ -480,10 +506,13 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue(null),
         },
       });
-
-      await expect(userService.addLocalAccount(userId, username, email, password)).rejects.toThrow(
-        UserNotFoundException,
-      );
+      const input: AddLocalAccountInput = {
+        id: userId,
+        username: username,
+        email: email,
+        password: password,
+      };
+      await expect(userService.addLocalAccount(input)).rejects.toThrow(UserNotFoundException);
     });
 
     it('이미 local 계정이 존재하면 예외를 던져야 합니다', async () => {
@@ -497,8 +526,13 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue({}),
         },
       });
-
-      await expect(userService.addLocalAccount(userId, username, email, password)).rejects.toThrow(
+      const input: AddLocalAccountInput = {
+        id: userId,
+        username: username,
+        email: email,
+        password: password,
+      };
+      await expect(userService.addLocalAccount(input)).rejects.toThrow(
         AlreadyHasLocalAccountException,
       );
     });
@@ -518,8 +552,13 @@ describe('UserService', () => {
           getEntityManager: jest.fn().mockReturnValue({ persistAndFlush: persist }),
         },
       });
-
-      await userService.addLocalAccount(userId, username, email, password);
+      const input: AddLocalAccountInput = {
+        id: userId,
+        username: username,
+        email: email,
+        password: password,
+      };
+      await userService.addLocalAccount(input);
 
       expect(user.username).toBe(username);
       expect(user.email).toBe(email);
@@ -595,7 +634,7 @@ describe('UserService', () => {
         email: 'social@email.com',
         name: '소셜유저',
         socialRefreshToken: 'refresh-token',
-      } as const;
+      } as CreateSocialUserInput;
 
       const { userService, userRepository } = await setupUserServiceTest({
         userRepo: {
@@ -631,7 +670,12 @@ describe('UserService', () => {
 
     it('테스트 계정이면 예외를 던져야 합니다', async () => {
       const { userService } = await setupUserServiceTest({});
-      await expect(userService.deleteUser(123456789)).rejects.toThrow(TestAccountMutationException);
+      const input: DeleteUserInput = {
+        id: 123456789,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+      };
+      await expect(userService.deleteUser(input)).rejects.toThrow(TestAccountMutationException);
     });
 
     it('refreshToken을 검증 후 Redis에서 삭제해야 합니다', async () => {
@@ -646,8 +690,12 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue(null),
         },
       });
-
-      await userService.deleteUser(userId, undefined, refreshToken);
+      const input: DeleteUserInput = {
+        id: userId,
+        accessToken: undefined,
+        refreshToken: refreshToken,
+      };
+      await userService.deleteUser(input);
 
       expect(tokenService.verifyRefreshToken).toHaveBeenCalledWith(refreshToken);
       expect(tokenService.deleteRefreshTokenFromRedis).toHaveBeenCalledWith(decoded.id);
@@ -662,8 +710,12 @@ describe('UserService', () => {
           findOne: jest.fn().mockResolvedValue(null),
         },
       });
-
-      await userService.deleteUser(userId, accessToken);
+      const input: DeleteUserInput = {
+        id: userId,
+        accessToken: accessToken,
+        refreshToken: undefined,
+      };
+      await userService.deleteUser(input);
 
       expect(tokenService.invalidateAccessToken).toHaveBeenCalledWith(accessToken);
     });
@@ -675,8 +727,12 @@ describe('UserService', () => {
           getEntityManager: jest.fn().mockReturnValue({ removeAndFlush: jest.fn() }),
         },
       });
-
-      await userService.deleteUser(userId);
+      const input: DeleteUserInput = {
+        id: userId,
+        accessToken: undefined,
+        refreshToken: undefined,
+      };
+      await userService.deleteUser(input);
 
       expect(jest.fn()).not.toHaveBeenCalled();
     });
@@ -693,7 +749,12 @@ describe('UserService', () => {
         },
       });
 
-      await userService.deleteUser(userId);
+      const input: DeleteUserInput = {
+        id: userId,
+        accessToken: undefined,
+        refreshToken: undefined,
+      };
+      await userService.deleteUser(input);
       expect(remove).toHaveBeenCalledWith(user);
     });
   });

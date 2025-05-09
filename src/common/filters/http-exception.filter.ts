@@ -2,7 +2,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
-import { logError } from '@/common/log-error';
+import { logStructuredError } from '@/common/log-structured-error';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -14,7 +14,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const err = exception instanceof Error ? exception : new Error('Unknown error');
     const status = exception instanceof HttpException ? exception.getStatus() : 500;
 
-    logError(err, req);
+    logStructuredError(err, req);
 
     const response =
       exception instanceof HttpException

@@ -57,7 +57,7 @@ export class NaverLinkStrategy extends PassportStrategy(Strategy, 'naver-link') 
       throw new AlreadyLinkedException();
     }
 
-    const naverAccountLink = this.socialAccountRepository.create({
+    const input = this.socialAccountRepository.create({
       user,
       provider: 'naver',
       providerId: providerId,
@@ -66,7 +66,7 @@ export class NaverLinkStrategy extends PassportStrategy(Strategy, 'naver-link') 
       updatedAt: new Date(),
     });
 
-    await this.socialAccountRepository.getEntityManager().persistAndFlush(naverAccountLink);
+    await this.socialAccountRepository.getEntityManager().persistAndFlush(input);
 
     return {
       id: user.id,

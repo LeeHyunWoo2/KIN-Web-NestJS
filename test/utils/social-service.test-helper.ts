@@ -28,6 +28,7 @@ export const setupSocialServiceTest = async (
 }> => {
   const config = createMockConfigService({
     'app.frontendOrigin': 'http://localhost:3000',
+    'oauth.socialLinkRedirectUrl': '/userinfo',
     'auth.refreshTokenTtl': 604800,
     ...(overrides.config || {}),
   });

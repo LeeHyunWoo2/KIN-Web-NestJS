@@ -8,7 +8,7 @@ import {
 import { FastifyRequest } from 'fastify';
 
 import { TokenService } from '@/auth/token.service';
-import { AccessTokenMissingException } from '@/common/exceptions/token.exceptions';
+import { AccessTokenMissingException } from '@/common/exceptions';
 
 @Injectable()
 export class AccessGuard implements CanActivate {
