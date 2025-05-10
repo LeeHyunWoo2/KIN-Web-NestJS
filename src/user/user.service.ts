@@ -6,6 +6,7 @@ import { Redis } from 'ioredis';
 import { assoc, mergeRight, pick, prop } from 'ramda';
 
 import { TokenService } from '@/auth/token.service';
+import { AccessTokenPayload } from '@/auth/types/auth-service.types';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import {
   AlreadyHasLocalAccountException,
@@ -16,7 +17,6 @@ import {
 } from '@/common/exceptions';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 import {
-  AccessTokenPayload,
   AddLocalAccountInput,
   CreateSocialUserInput,
   DeleteUserInput,
@@ -24,9 +24,9 @@ import {
   FindUserQueryData,
   PublicUserProfile,
   ResetPasswordInput,
-  SafeUserInfo,
   UpdateUserInput,
-} from '@/types/user.types';
+  UserInfoResult,
+} from '@/user/types/user-service.types';
 
 import { SocialAccount } from './entity/social-account.entity';
 import { User } from './entity/user.entity';
@@ -66,7 +66,7 @@ export class UserService {
   }
 
   @LogExecutionTime()
-  async getUserInfo(id: number): Promise<SafeUserInfo> {
+  async getUserInfo(id: number): Promise<UserInfoResult> {
     const user = await this.userRepository.findOne(id, {
       fields: [
         'id',
@@ -83,7 +83,14 @@ export class UserService {
       populate: ['socialAccounts'],
     });
     if (!user) throw new UserNotFoundException();
-    return user;
+    return {
+      username: user.username ?? undefined,
+      name: user.name,
+      email: user.email,
+      profileIcon: user.profileIcon,
+      role: user.role,
+      createdAt: user.createdAt,
+    };
   }
 
   @LogExecutionTime()

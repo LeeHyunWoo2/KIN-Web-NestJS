@@ -1,5 +1,4 @@
-// TODO 모듈 undefined 오류 해결해야 함
-import Joi from 'joi';
+import * as Joi from 'joi';
 
 export const validationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
@@ -51,7 +50,7 @@ export const validationSchema = Joi.object({
   SOCIAL_LINK_REDIRECT_URL: Joi.string().required(),
 
   POSTGRES_HOST: Joi.string().required(),
-  POSTGRES_POR: Joi.number().required(),
+  POSTGRES_PORT: Joi.number().required(),
   POSTGRES_USER: Joi.string().required(),
   POSTGRES_PASSWORD: Joi.string().required(),
   POSTGRES_DB: Joi.string().required(),

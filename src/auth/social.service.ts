@@ -4,6 +4,12 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { TokenService } from '@/auth/token.service';
+import {
+  RedirectAfterLinkInput,
+  SocialCallbackInput,
+  TokenPair,
+  UnlinkSocialAccountInput,
+} from '@/auth/types/auth-service.types';
 import { setAuthCookies } from '@/auth/utils/set-auth-cookies.util';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import {
@@ -11,12 +17,6 @@ import {
   NoRemainingAuthMethodException,
   UserNotFoundException,
 } from '@/common/exceptions';
-import {
-  RedirectAfterLinkInput,
-  SocialCallbackInput,
-  TokenPair,
-  UnlinkSocialAccountInput,
-} from '@/types/user.types';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 

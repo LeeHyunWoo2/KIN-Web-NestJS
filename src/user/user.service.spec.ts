@@ -7,14 +7,14 @@ import {
   TestAccountMutationException,
   UserNotFoundException,
 } from '@/common/exceptions';
+import { User } from '@/user/entity/user.entity';
 import {
   AddLocalAccountInput,
   CreateSocialUserInput,
   DeleteUserInput,
   ResetPasswordInput,
   UpdateUserInput,
-} from '@/types/user.types';
-import { User } from '@/user/entity/user.entity';
+} from '@/user/types/user-service.types';
 
 import { setupUserServiceTest } from '../../test/utils/user-service.test-helper';
 

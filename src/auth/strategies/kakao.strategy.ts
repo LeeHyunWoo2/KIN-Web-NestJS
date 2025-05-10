@@ -4,8 +4,9 @@ import { PassportStrategy } from '@nestjs/passport';
 import { FastifyRequest } from 'fastify';
 import { Profile, Strategy, StrategyOptionWithRequest } from 'passport-kakao';
 
+import { AccessTokenPayload } from '@/auth/types/auth-service.types';
 import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
-import { AccessTokenPayload, CreateSocialUserInput } from '@/types/user.types';
+import { CreateSocialUserInput } from '@/user/types/user-service.types';
 import { UserService } from '@/user/user.service';
 
 interface KakaoProfileJson {

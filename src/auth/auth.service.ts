@@ -5,6 +5,12 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
 
 import { TokenService } from '@/auth/token.service';
+import {
+  AccessTokenPayload,
+  CreateUserInput,
+  LoginUserInput,
+  TokenPair,
+} from '@/auth/types/auth-service.types';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import {
   EmailAlreadyExistsException,
@@ -13,7 +19,6 @@ import {
   UsernameAlreadyExistsException,
   UserNotFoundException,
 } from '@/common/exceptions';
-import { AccessTokenPayload, CreateUserInput, LoginUserInput, TokenPair } from '@/types/user.types';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 

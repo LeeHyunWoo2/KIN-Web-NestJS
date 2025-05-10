@@ -3,7 +3,6 @@ import cookie from '@fastify/cookie';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { FastifyServerOptions } from 'fastify';
 import { Logger } from 'nestjs-pino';
 
@@ -26,29 +25,6 @@ async function bootstrap(): Promise<void> {
   );
 
   await app.register(cookie);
-
-  const config = new DocumentBuilder()
-    .setTitle('Keep Idea Note API')
-    .setDescription('회원 인증, 유저 정보 REST API')
-    .setVersion('1.0.0')
-    .addBearerAuth({
-      type: 'http',
-      scheme: 'bearer',
-      bearerFormat: 'JWT',
-      name: 'Authorization',
-      description: '64KcIO2GoOyKpCDqsJzrsJzsnpDqsIAg65Cg6rGw7JW8',
-      in: 'header',
-    })
-    .build();
-
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      docExpansion: 'none',
-      displayRequestDuration: true,
-    },
-  });
 
   app.useGlobalFilters(new HttpExceptionFilter());
   app.enableCors({

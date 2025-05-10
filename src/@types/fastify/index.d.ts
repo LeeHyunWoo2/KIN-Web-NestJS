@@ -1,6 +1,10 @@
 import 'fastify';
 
-import { AccessTokenPayload, DecodedUser, PassportAuthResultError } from '@/types/user.types';
+import {
+  AccessTokenPayload,
+  DecodedUser,
+  PassportAuthResultError,
+} from '@/auth/types/auth-service.types';
 
 declare module 'fastify' {
   interface FastifyRequest {

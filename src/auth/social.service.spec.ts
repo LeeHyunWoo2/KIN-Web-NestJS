@@ -1,13 +1,13 @@
 import {
+  RedirectAfterLinkInput,
+  SocialCallbackInput,
+  UnlinkSocialAccountInput,
+} from '@/auth/types/auth-service.types';
+import {
   AlreadyLinkedException,
   NoRemainingAuthMethodException,
   UserNotFoundException,
 } from '@/common/exceptions';
-import {
-  RedirectAfterLinkInput,
-  SocialCallbackInput,
-  UnlinkSocialAccountInput,
-} from '@/types/user.types';
 
 import { setupSocialServiceTest } from '../../test/utils/social-service.test-helper';
 

@@ -6,10 +6,10 @@ import { PassportStrategy } from '@nestjs/passport';
 import { FastifyRequest } from 'fastify';
 import { Profile, Strategy } from 'passport-kakao';
 
+import { AccessTokenPayload } from '@/auth/types/auth-service.types';
 import { AlreadyLinkedException } from '@/common/exceptions/auth.exceptions';
 import { AccessTokenMissingException } from '@/common/exceptions/token.exceptions';
 import { UserNotFoundException } from '@/common/exceptions/user.exceptions';
-import { AccessTokenPayload } from '@/types/user.types';
 import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 

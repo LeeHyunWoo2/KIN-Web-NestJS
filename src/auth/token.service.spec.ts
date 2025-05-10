@@ -1,3 +1,4 @@
+import { AccessTokenPayload, SocialTokenUser } from '@/auth/types/auth-service.types';
 import {
   AccessTokenBlacklistedException,
   AccessTokenInvalidException,
@@ -10,7 +11,6 @@ import {
   RefreshTokenNotFoundException,
   SaveRefreshTokenException,
 } from '@/common/exceptions';
-import { AccessTokenPayload, SocialTokenUser } from '@/types/user.types';
 
 import { setupTokenServiceTest } from '../../test/utils/token-service.test-helper';
 

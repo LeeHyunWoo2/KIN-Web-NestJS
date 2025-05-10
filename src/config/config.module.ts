@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule as NestConfigModule } from '@nestjs/config';
 
 import postgresConfig from '@/config/postgres.config';
+import { validationSchema } from '@/config/validation';
 
 import { appConfig } from './app.config';
 import { authConfig } from './auth.config';
@@ -14,6 +15,7 @@ import { securityConfig } from './security.config';
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
+      validationSchema: validationSchema,
       load: [
         appConfig,
         authConfig,

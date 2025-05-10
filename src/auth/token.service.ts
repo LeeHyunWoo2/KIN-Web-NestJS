@@ -3,6 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Redis } from 'ioredis';
 
+import {
+  AccessTokenPayload,
+  EmailTokenPayload,
+  GenerateOAuthToken,
+  RefreshTokenPayload,
+  TokenPair,
+} from '@/auth/types/auth-service.types';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import {
   AccessTokenBlacklistedException,
@@ -17,13 +24,6 @@ import {
   SaveRefreshTokenException,
 } from '@/common/exceptions';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
-import {
-  AccessTokenPayload,
-  EmailTokenPayload,
-  GenerateOAuthToken,
-  RefreshTokenPayload,
-  TokenPair,
-} from '@/types/user.types';
 
 @Injectable()
 export class TokenService {

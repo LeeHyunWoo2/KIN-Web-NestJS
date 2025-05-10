@@ -1,7 +1,7 @@
 import { FastifyReply } from 'fastify';
 
+import { TokenPair } from '@/auth/types/auth-service.types';
 import { getConfig } from '@/config/global-config.service';
-import { TokenPair } from '@/types/user.types';
 
 import { setCookie } from './set-cookie.util';
 

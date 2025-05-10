@@ -3,9 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 
 import { TokenService } from '@/auth/token.service';
+import { SendVerificationEmailInput } from '@/auth/types/auth-service.types';
 import { LogExecutionTime } from '@/common/decorators/log-execution-time.decorator';
 import { EmailSendFailedException } from '@/common/exceptions';
-import { SendVerificationEmailInput } from '@/types/user.types';
 
 @Injectable()
 export class EmailService {
