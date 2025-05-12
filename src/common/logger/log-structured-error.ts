@@ -15,6 +15,7 @@ export const logStructuredError = (error: unknown, req: FastifyRequest): void =>
   logger[level]({
     source: 'HttpExceptionFilter',
     type: 'server',
+    requestId: req.requestId ?? 'unknown',
     status,
     message: err.message,
     stack: err.stack,

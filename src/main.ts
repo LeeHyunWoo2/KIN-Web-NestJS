@@ -7,10 +7,11 @@ import { FastifyServerOptions } from 'fastify';
 import { Logger } from 'nestjs-pino';
 
 import { HttpExceptionFilter } from '@/common/filters/http-exception.filter';
-import { setLogger } from '@/common/log-structured-error';
+import { setLogger } from '@/common/logger/log-structured-error';
 import { globalConfigService } from '@/config/global-config.service';
 
 import { AppModule } from './app.module';
+import { randomUUID } from 'crypto';
 
 async function bootstrap(): Promise<void> {
   const appContext = await NestFactory.createApplicationContext(AppModule);
@@ -26,9 +27,20 @@ async function bootstrap(): Promise<void> {
 
   await app.register(cookie);
 
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .addHook('onRequest', async (req, res) => {
+      const requestIdHeader = Array.isArray(req.headers['x-request-id'])
+        ? req.headers['x-request-id'][0]
+        : req.headers['x-request-id'];
+      req.requestId = requestIdHeader ?? randomUUID();
+      res.header('x-request-id', req.requestId);
+    });
+
   app.useGlobalFilters(new HttpExceptionFilter());
   app.enableCors({
-    origin: configService.get<string>('app.frontendOrigin') ?? 'http://localhost:3000',
+    origin: configService.getOrThrow<string>('app.frontendOrigin'),
     credentials: true,
   });
 

@@ -11,7 +11,7 @@ export const RedisProvider: Provider = {
     const client = new Redis({
       host: configService.getOrThrow<string>('redis.host'),
       port: configService.getOrThrow<number>('redis.port'),
-      password: configService.get<string>('redis.password'),
+      password: configService.getOrThrow<string>('redis.password'),
       db: 0,
     });
 

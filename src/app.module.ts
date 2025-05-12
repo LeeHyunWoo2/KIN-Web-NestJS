@@ -4,8 +4,10 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AopModule } from '@toss/nestjs-aop';
 import { LoggerModule } from 'nestjs-pino';
+import pino from 'pino';
 
 import { CommonAopModule } from '@/common/aop/aop.module';
+import { createMultiStream } from '@/common/logger/create-multi-stream';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -34,23 +36,15 @@ import { UserModule } from './user/user.module';
     }),
     LoggerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        pinoHttp: {
-          autoLogging: false,
-          level: configService.get<string>('app.nodeEnv') === 'production' ? 'info' : 'debug',
-          transport:
-            configService.get<string>('app.nodeEnv') !== 'production'
-              ? {
-                  target: 'pino-pretty',
-                  options: {
-                    colorize: true,
-                    translateTime: 'SYS:standard',
-                    ignore: 'pid,hostname',
-                  },
-                }
-              : undefined,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const isProduction = configService.get<string>('app.nodeEnv') === 'production';
+        return {
+          pinoHttp: {
+            stream: isProduction ? pino.destination(1) : createMultiStream(),
+            autoLogging: false,
+          },
+        };
+      },
     }),
     AuthModule,
     UserModule,

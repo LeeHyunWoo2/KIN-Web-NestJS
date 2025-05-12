@@ -17,5 +17,6 @@ declare module 'fastify' {
       user?: AccessTokenPayload;
       error?: PassportAuthResultError;
     };
+    requestId?: string;
   }
 }
