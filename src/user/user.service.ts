@@ -84,12 +84,17 @@ export class UserService {
     });
     if (!user) throw new UserNotFoundException();
     return {
+      id: user.id,
       username: user.username ?? undefined,
       name: user.name,
       email: user.email,
       profileIcon: user.profileIcon,
       role: user.role,
       createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      marketingConsent: user.marketingConsent,
+      lastActivity: user.lastActivity,
+      socialAccounts: user.socialAccounts.toArray(),
     };
   }
 

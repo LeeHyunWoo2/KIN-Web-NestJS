@@ -1,5 +1,9 @@
 import '../../test/utils/bcrypt.mock';
 
+import { getRepositoryToken } from '@mikro-orm/nestjs';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { TokenService } from '@/auth/token.service';
 import {
   AlreadyHasLocalAccountException,
   PasswordReusedException,
@@ -7,6 +11,8 @@ import {
   TestAccountMutationException,
   UserNotFoundException,
 } from '@/common/exceptions';
+import { REDIS_CLIENT } from '@/config/redis.provider.config';
+import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 import {
   AddLocalAccountInput,
@@ -15,8 +21,58 @@ import {
   ResetPasswordInput,
   UpdateUserInput,
 } from '@/user/types/user-service.types';
+import { UserService } from '@/user/user.service';
 
-import { setupUserServiceTest } from '../../test/utils/user-service.test-helper';
+import { createMockRedis, MockRedis } from '../../test/utils/redis.mock';
+import { createMockRepository, MockRepository } from '../../test/utils/repository.mock';
+
+interface SetupUserServiceOptions {
+  redis?: Partial<MockRedis>;
+  userRepo?: Partial<MockRepository<User>>;
+  socialRepo?: Partial<MockRepository<SocialAccount>>;
+  tokenService?: Partial<TokenService>;
+}
+
+const setupUserServiceTest = async (
+  overrides: SetupUserServiceOptions = {},
+): Promise<{
+  userService: UserService;
+  redis: MockRedis;
+  userRepository: MockRepository<User>;
+  socialAccountRepository: MockRepository<SocialAccount>;
+  tokenService: TokenService;
+}> => {
+  const redis = { ...createMockRedis(), ...overrides.redis };
+  const userRepository = { ...createMockRepository<User>(), ...overrides.userRepo };
+  const socialAccountRepository = {
+    ...createMockRepository<SocialAccount>(),
+    ...overrides.socialRepo,
+  };
+  const tokenService = {
+    verifyRefreshToken: jest.fn(),
+    deleteRefreshTokenFromRedis: jest.fn(),
+    invalidateAccessToken: jest.fn(),
+    ...overrides.tokenService,
+  } as unknown as TokenService;
+
+  const moduleRef: TestingModule = await Test.createTestingModule({
+    providers: [
+      UserService,
+      { provide: REDIS_CLIENT, useValue: redis },
+      { provide: getRepositoryToken(User), useValue: userRepository },
+      { provide: getRepositoryToken(SocialAccount), useValue: socialAccountRepository },
+      { provide: TokenService, useValue: tokenService },
+    ],
+  }).compile();
+
+  return {
+    userService: moduleRef.get(UserService),
+    redis,
+    userRepository,
+    socialAccountRepository,
+    tokenService,
+  };
+};
 
 describe('UserService', () => {
   describe('getPublicProfile', () => {
@@ -91,7 +147,9 @@ describe('UserService', () => {
       lastActivity: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
-      socialAccounts: [],
+      socialAccounts: {
+        toArray: () => [],
+      },
     };
 
     it('해당 유저가 존재할 경우 정보를 반환해야 합니다', async () => {
@@ -102,7 +160,19 @@ describe('UserService', () => {
       });
 
       const result = await userService.getUserInfo(userId);
-      expect(result).toEqual(userData);
+      expect(result).toEqual({
+        id: userId,
+        username: 'tester',
+        name: 'Tester',
+        email: 'tester@email.com',
+        marketingConsent: true,
+        role: 'user',
+        profileIcon: 'icon.png',
+        lastActivity: userData.lastActivity,
+        createdAt: userData.createdAt,
+        updatedAt: userData.updatedAt,
+        socialAccounts: [],
+      });
       expect(userRepository.findOne).toHaveBeenCalledWith(userId, {
         fields: [
           'id',
@@ -119,7 +189,32 @@ describe('UserService', () => {
         populate: ['socialAccounts'],
       });
     });
+    it('유저의 username이 null이면 username은 undefined로 반환되어야 합니다', async () => {
+      const userDataWithoutUsername = {
+        id: userId,
+        username: null,
+        name: 'Tester',
+        email: 'tester@email.com',
+        marketingConsent: true,
+        role: 'user',
+        profileIcon: 'icon.png',
+        lastActivity: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        socialAccounts: {
+          toArray: () => [],
+        },
+      };
 
+      const { userService } = await setupUserServiceTest({
+        userRepo: {
+          findOne: jest.fn().mockResolvedValue(userDataWithoutUsername),
+        },
+      });
+
+      const result = await userService.getUserInfo(userId);
+      expect(result.username).toBeUndefined();
+    });
     it('해당 유저가 존재하지 않으면 예외를 던져야 합니다', async () => {
       const { userService } = await setupUserServiceTest({
         userRepo: {

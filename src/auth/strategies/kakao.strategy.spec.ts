@@ -1,6 +1,51 @@
-import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
+import { ConfigService } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
 
-import { setupKakaoStrategyTest } from '../../../test/utils/kakao-strategy.test-helper';
+import { KakaoStrategy } from '@/auth/strategies/kakao.strategy';
+import { MissingSocialEmailException } from '@/common/exceptions/auth.exceptions';
+import { UserService } from '@/user/user.service';
+
+import { createMockConfigService, MockConfigService } from '../../../test/utils/config.mock';
+
+interface SetupOptions {
+  config?: Record<string, string>;
+  userService?: Partial<UserService>;
+}
+
+const setupKakaoStrategyTest = async (
+  overrides: SetupOptions = {},
+): Promise<{
+  strategy: KakaoStrategy;
+  config: MockConfigService;
+  userService: UserService;
+}> => {
+  const config = createMockConfigService({
+    'oauth.kakao.clientId': 'kakao-client-id',
+    'oauth.kakao.clientSecret': 'kakao-client-secret',
+    'oauth.kakao.callbackUrl': 'http://localhost:3000/auth/kakao/callback',
+    ...(overrides.config || {}),
+  });
+
+  const userService = {
+    findUserBySocialAccount: jest.fn(),
+    createSocialUser: jest.fn(),
+    ...overrides.userService,
+  } as unknown as UserService;
+
+  const moduleRef: TestingModule = await Test.createTestingModule({
+    providers: [
+      KakaoStrategy,
+      { provide: ConfigService, useValue: config },
+      { provide: UserService, useValue: userService },
+    ],
+  }).compile();
+
+  return {
+    strategy: moduleRef.get(KakaoStrategy),
+    config,
+    userService,
+  };
+};
 
 describe('KakaoStrategy', () => {
   describe('validate', () => {

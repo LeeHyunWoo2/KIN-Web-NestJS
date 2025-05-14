@@ -24,12 +24,32 @@ export class PublicUserProfileDto extends BaseUserProfileDto {
 }
 
 export class UserInfoResponseDto extends BaseUserProfileDto {
+  @Type(() => Number)
+  @IsNumber()
+  id: number;
+
   @IsOptional()
   @IsString()
   username?: string;
 
   @IsOptional()
   createdAt?: Date;
+
+  @IsOptional()
+  @Type(() => SocialAccountDto)
+  socialAccounts?: SocialAccountDto[];
+
+  @IsOptional()
+  @Type(() => Boolean)
+  marketingConsent?: boolean;
+
+  @IsOptional()
+  @Type(() => Date)
+  updatedAt?: Date;
+
+  @IsOptional()
+  @Type(() => Date)
+  lastActivity?: Date;
 }
 
 export class UpdateUserDto {
@@ -41,6 +61,18 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   profileIcon?: string;
+}
+
+export class SocialAccountDto {
+  @IsString()
+  provider: string;
+
+  @IsString()
+  providerId: string;
+
+  @IsOptional()
+  @IsString()
+  socialRefreshToken?: string;
 }
 
 export class AddLocalAccountDto {

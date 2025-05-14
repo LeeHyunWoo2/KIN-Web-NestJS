@@ -19,7 +19,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const response =
       exception instanceof HttpException
         ? exception.getResponse()
-        : { code: 'INTERNAL_SERVER_ERROR', message: err.message || 'Unhandled error' };
+        : { code: 'INTERNAL_SERVER_ERROR', message: err.message };
 
     const errorResponse =
       typeof response === 'string'

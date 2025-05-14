@@ -22,12 +22,17 @@ export interface CreateSocialUserInput {
 }
 
 export interface UserInfoResult {
+  id: number;
   username?: string;
   name: string;
   email: string;
   profileIcon: string;
   role: UserRole;
   createdAt: Date;
+  updatedAt: Date;
+  marketingConsent: boolean;
+  lastActivity?: Date;
+  socialAccounts?: SocialAccount[];
 }
 
 export interface UpdateUserProfileData {

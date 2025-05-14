@@ -28,7 +28,24 @@ const config: Config = {
   coverageDirectory: '../coverage',
 
   // An array of regexp pattern strings used to skip coverage collection
-  coveragePathIgnorePatterns: ['node_modules', '.*\\.module\\.ts$', 'main.ts$', '.*\\.spec\\.ts$'],
+  coveragePathIgnorePatterns: [
+    'node_modules',
+    '.*\\.module\\.ts$',
+    'main.ts$',
+    '.*\\.spec\\.ts$',
+    '.*\\.entity\\.ts$',
+    '.*\\.dto\\.ts$',
+    '.*\\.types\\.ts$',
+    '.*\\.config\\.ts$',
+    '.*\\.strategy\\.ts$',
+    'app.*.ts$',
+    'index.d.ts$',
+    'validation.ts$',
+    'log-execution-time.handler.ts$',
+    'log-execution-time.decorator.ts$',
+    'create-multi-stream.ts$',
+    'global-config.service.ts$',
+  ],
 
   // Indicates which provider should be used to instrument code for coverage
   coverageProvider: 'v8',

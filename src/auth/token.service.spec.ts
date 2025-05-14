@@ -1,3 +1,8 @@
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { TokenService } from '@/auth/token.service';
 import { AccessTokenPayload, SocialTokenUser } from '@/auth/types/auth-service.types';
 import {
   AccessTokenBlacklistedException,
@@ -11,8 +16,55 @@ import {
   RefreshTokenNotFoundException,
   SaveRefreshTokenException,
 } from '@/common/exceptions';
+import { REDIS_CLIENT } from '@/config/redis.provider.config';
 
-import { setupTokenServiceTest } from '../../test/utils/token-service.test-helper';
+import {
+  createMockConfigService,
+  MockConfigService,
+  MockConfigType,
+} from '../../test/utils/config.mock';
+import { createMockJwtService, MockJwtService } from '../../test/utils/jwt.mock';
+import { createMockRedis, MockRedis } from '../../test/utils/redis.mock';
+
+interface SetupOptions {
+  redis?: Partial<MockRedis>;
+  config?: MockConfigType;
+  jwt?: Partial<MockJwtService>;
+}
+
+const setupTokenServiceTest = async (
+  overrides: SetupOptions = {},
+): Promise<{
+  tokenService: TokenService;
+  redis: MockRedis;
+  config: MockConfigService;
+  jwt: MockJwtService;
+}> => {
+  const defaultConfig = {
+    'auth.accessTokenSecret': 'access-secret',
+    'auth.refreshTokenSecret': 'refresh-secret',
+  };
+
+  const redis = { ...createMockRedis(), ...overrides.redis };
+  const config = createMockConfigService({ ...defaultConfig, ...(overrides.config || {}) });
+  const jwt = { ...createMockJwtService(), ...overrides.jwt };
+
+  const moduleRef: TestingModule = await Test.createTestingModule({
+    providers: [
+      TokenService,
+      { provide: REDIS_CLIENT, useValue: redis },
+      { provide: ConfigService, useValue: config },
+      { provide: JwtService, useValue: jwt },
+    ],
+  }).compile();
+
+  return {
+    tokenService: moduleRef.get(TokenService),
+    redis,
+    config,
+    jwt,
+  };
+};
 
 describe('TokenService', () => {
   describe('generateTokens', () => {
