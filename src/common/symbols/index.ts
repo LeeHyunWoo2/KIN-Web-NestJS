@@ -1,0 +1,1 @@
+export const LOG_EXECUTION_TIME = Symbol('LOG_EXECUTION_TIME');
