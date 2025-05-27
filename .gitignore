@@ -1,0 +1,56 @@
+# Node modules
+node_modules/
+
+# Environment files
+.env*
+!.env.example
+
+# Log files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime
+dist/
+build/
+.tmp/
+.cache/
+.pids
+
+# Nest.js
+coverage/
+.jest/
+jest-e2e.json
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose*.yml
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs
+.idea/
+.vscode/
+*.sw?
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Test output
+test-results/
+test-report.xml
+
+# Redis dump or cache files (optional)
+dump.rdb
+*.rdb
+
+# Elasticsearch data (if mounted locally)
+elasticsearch-data/
+
+# pnpm store (optional, improves performance on CI)
+.pnpm-store/
