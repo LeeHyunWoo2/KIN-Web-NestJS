@@ -1,4 +1,5 @@
 import { ExecutionContext, HttpException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { AccessGuard } from '@/auth/access.guard';
 import { TokenService } from '@/auth/token.service';
@@ -8,13 +9,18 @@ import { AccessTokenMissingException } from '@/common/exceptions';
 describe('AccessGuard', () => {
   let guard: AccessGuard;
   let tokenService: jest.Mocked<TokenService>;
+  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(() => {
     tokenService = {
       verifyAccessToken: jest.fn(),
     } as unknown as jest.Mocked<TokenService>;
 
-    guard = new AccessGuard(tokenService);
+    configService = {
+      get: jest.fn().mockReturnValue('test'),
+    } as unknown as jest.Mocked<ConfigService>;
+
+    guard = new AccessGuard(tokenService, configService);
     jest.clearAllMocks();
   });
 
