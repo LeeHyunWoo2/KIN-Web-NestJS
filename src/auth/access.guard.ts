@@ -24,11 +24,12 @@ export class AccessGuard implements CanActivate {
    */
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isE2ETest = this.configService.get<string>('app.nodeEnv') === 'test';
     const request = context.switchToHttp().getRequest<FastifyRequest>();
     const token =
       request.cookies?.accessToken ??
-      (this.configService.get<string>('app.nodeEnv') === 'test'
-        ? request.headers['authorization']?.split('Bearer ')[1]
+      (isE2ETest && request.headers?.['authorization']
+        ? request.headers['authorization'].split('Bearer ')[1]
         : undefined);
 
     if (!token) {

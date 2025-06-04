@@ -294,8 +294,8 @@ describe('TokenService', () => {
       }));
       const { tokenService } = await setupTokenServiceTest({
         config: {
-          'oauth.clientId': 'test-google-client-id',
-          'oauth.clientSecret': 'test-google-client-secret',
+          'oauth.google.clientId': 'test-google-client-id',
+          'oauth.google.clientSecret': 'test-google-client-secret',
         },
       });
       const result = await tokenService.generateOAuthToken({
@@ -316,8 +316,8 @@ describe('TokenService', () => {
       }));
       const { tokenService } = await setupTokenServiceTest({
         config: {
-          'oauth.clientId': 'test-kakao-client-id',
-          'oauth.clientSecret': 'test-kakao-client-secret',
+          'oauth.kakao.clientId': 'test-kakao-client-id',
+          'oauth.kakao.clientSecret': 'test-kakao-client-secret',
         },
       });
       const result = await tokenService.generateOAuthToken({
@@ -338,8 +338,8 @@ describe('TokenService', () => {
       }));
       const { tokenService } = await setupTokenServiceTest({
         config: {
-          'oauth.clientId': 'test-naver-client-id',
-          'oauth.clientSecret': 'test-naver-client-secret',
+          'oauth.naver.clientId': 'test-naver-client-id',
+          'oauth.naver.clientSecret': 'test-naver-client-secret',
         },
       });
       const result = await tokenService.generateOAuthToken({
@@ -356,8 +356,8 @@ describe('TokenService', () => {
       }));
       const { tokenService } = await setupTokenServiceTest({
         config: {
-          'oauth.clientId': 'test-client-id',
-          'oauth.clientSecret': 'test-client-secret',
+          'oauth.google.clientId': 'test-client-id',
+          'oauth.google.clientSecret': 'test-client-secret',
         },
       });
       await expect(
@@ -410,13 +410,16 @@ describe('TokenService', () => {
         redis: {
           get: jest.fn().mockResolvedValue(null),
         },
+        jwt: {
+          decode: jest.fn().mockReturnValue({
+            id: 123456,
+            email: 'user@email.com',
+            role: 'user',
+            exp: mockExp,
+          }),
+        },
       });
-      jest.spyOn(tokenService, 'verifyAccessToken').mockResolvedValue({
-        id: 123456,
-        email: 'user@email.com',
-        role: 'user',
-        exp: mockExp,
-      });
+
       await tokenService.invalidateAccessToken(accessToken);
       expect(redis.set).toHaveBeenCalledWith(
         `blacklist:${accessToken}`,

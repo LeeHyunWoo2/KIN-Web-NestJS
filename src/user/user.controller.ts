@@ -125,11 +125,13 @@ export class UserController {
   getPublicUserProfileTest(@Req() req: FastifyRequest): Promise<PublicUserProfileDto> {
     return this.userService.getPublicProfile(req.user!.id);
   }
+
   @Post('test')
   @UseGuards(AccessGuard)
   getUserInfoTest(@Req() req: FastifyRequest): Promise<UserInfoResponseDto> {
     return this.userService.getUserInfo(req.user!.id);
   }
+
   @Put('test')
   @UseGuards(AccessGuard)
   updateUserTest(
@@ -138,6 +140,7 @@ export class UserController {
   ): Promise<Partial<PublicUserProfileDto>> {
     return this.userService.updateUser({ id: req.user!.id, data: updatedData });
   }
+
   @Post('test/add-local')
   @UseGuards(AccessGuard)
   addLocalAccountTest(@Req() req: FastifyRequest, @Body() dto: AddLocalAccountDto): Promise<void> {
@@ -148,6 +151,7 @@ export class UserController {
       password: dto.password,
     });
   }
+
   @Delete('test')
   @UseGuards(AccessGuard)
   @HttpCode(204)

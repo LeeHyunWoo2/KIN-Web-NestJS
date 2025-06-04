@@ -3,6 +3,7 @@ export interface MockJwtService {
   signAsync: jest.Mock;
   verify: jest.Mock;
   verifyAsync: jest.Mock;
+  decode: jest.Mock;
 }
 
 export const createMockJwtService = (): MockJwtService => ({
@@ -10,4 +11,5 @@ export const createMockJwtService = (): MockJwtService => ({
   signAsync: jest.fn(),
   verify: jest.fn(),
   verifyAsync: jest.fn(),
+  decode: jest.fn(),
 });
