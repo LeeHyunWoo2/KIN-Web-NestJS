@@ -11,3 +11,5 @@ KIN-Web 백엔드 TypeScript + NestJS 마이그레이션 + Jest, ELK, pnpm 도�
 [4단계 - 커스텀 예외 및 구조화된 로그 흐름 구현 및 pino 도입](https://github.com/LeeHyunWoo2/KIN-Web-NestJS/tree/step4.structured-logging%2Ccustom-exceptions)
 
 [5단계 - Jest 단위 테스트](https://github.com/LeeHyunWoo2/KIN-Web-NestJS/tree/step5.unit-tests)
+
+[6단계 - E2E 테스트](https://github.com/LeeHyunWoo2/KIN-Web-NestJS/tree/step6.E2E-test)
