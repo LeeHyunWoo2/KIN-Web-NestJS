@@ -6,11 +6,9 @@ import {
   Post,
   Req,
   Res,
-  UnauthorizedException,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
@@ -26,14 +24,12 @@ import {
 } from '@/auth/types/auth-service.types';
 import { CurrentUserDecorator } from '@/common/decorators/current-user.decorator';
 import { RefreshToken } from '@/common/decorators/refresh-token.decorator';
-import { RefreshTokenMissingException } from '@/common/exceptions';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly tokenService: TokenService,
-    private readonly configService: ConfigService,
   ) {}
 
   @Post('register')
@@ -100,60 +96,5 @@ export class AuthController {
   @UseGuards(AccessGuard)
   checkSession(@CurrentUserDecorator() user: DecodedUser): DecodedUser {
     return user;
-  }
-
-  // ------------ E2E 테스트용 API ------------
-  @Post('test/refresh')
-  async refreshTokensTest(@Req() req: FastifyRequest): Promise<TokenPair> {
-    if (this.configService.get<string>('app.nodeEnv') !== 'test') {
-      throw new UnauthorizedException('Test 전용 API입니다.');
-    }
-
-    const refreshToken = req.headers['x-refresh-token'];
-    if (!refreshToken || typeof refreshToken !== 'string') {
-      throw new RefreshTokenMissingException();
-    }
-
-    return this.authService.refreshTokens(refreshToken);
-  }
-
-  @Post('test/logout')
-  @HttpCode(204)
-  @UseGuards(AccessGuard)
-  async logoutTest(
-    @Req() req: FastifyRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<void> {
-    if (this.configService.get<string>('app.nodeEnv') !== 'test') {
-      throw new UnauthorizedException('Test 전용 API입니다.');
-    }
-
-    const refreshTokenHeader = req.headers['x-refresh-token'];
-    const refreshToken = typeof refreshTokenHeader === 'string' ? refreshTokenHeader : undefined;
-
-    const accessToken =
-      req.cookies?.accessToken ?? req.headers.authorization?.replace('Bearer ', '');
-
-    if (refreshToken) {
-      try {
-        const { id } = await this.tokenService.verifyRefreshToken(refreshToken);
-        await this.tokenService.deleteRefreshTokenFromRedis(id);
-      } catch {
-        // 이미 없거나 무효해도 무시
-      }
-    }
-
-    if (accessToken) {
-      await this.tokenService.invalidateAccessToken(accessToken);
-    }
-
-    reply.clearCookie('accessToken');
-    reply.clearCookie('refreshToken');
-  }
-
-  @Get('test/session')
-  @UseGuards(AccessGuard)
-  checkSessionTest(@Req() req: FastifyRequest): DecodedUser {
-    return req.user!;
   }
 }

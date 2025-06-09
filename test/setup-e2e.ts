@@ -1,9 +1,8 @@
 import cookie from '@fastify/cookie';
 import { MikroORM } from '@mikro-orm/core';
-import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Redis } from 'ioredis';
 
@@ -12,32 +11,36 @@ import { TokenService } from '@/auth/token.service';
 import { globalConfigService } from '@/config/global-config.service';
 import { REDIS_CLIENT } from '@/config/redis.provider.config';
 
-export let app: INestApplication;
+export let app: NestFastifyApplication;
 export let redis: Redis;
 export let jwtService: JwtService;
 export let configService: ConfigService;
 export let tokenService: TokenService;
+export let orm: MikroORM;
 
 beforeAll(async () => {
-  const fastifyAdapter = new FastifyAdapter();
-  fastifyAdapter.register(cookie);
+  const adapter = new FastifyAdapter();
 
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
 
-  app = moduleFixture.createNestApplication();
+  app = moduleFixture.createNestApplication<NestFastifyApplication>(adapter);
+
+  await app.register(cookie);
+
   await app.init();
+  await app.listen(0);
 
-  const orm = app.get(MikroORM);
-  await orm.getSchemaGenerator().refreshDatabase();
-
+  orm = app.get(MikroORM);
   redis = app.get<Redis>(REDIS_CLIENT);
   jwtService = app.get(JwtService);
   configService = app.get(ConfigService);
   tokenService = app.get(TokenService);
 
   globalConfigService(configService);
+
+  await orm.getSchemaGenerator().refreshDatabase();
 });
 
 afterAll(async () => {

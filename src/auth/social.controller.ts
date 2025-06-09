@@ -148,17 +148,4 @@ export class SocialController {
     };
     await this.socialService.unlinkSocialAccount(input);
   }
-
-  // ------------ E2E 테스트용 API ------------
-  @Delete('test/:provider')
-  @UseGuards(AccessGuard)
-  async unlinkSocialTest(
-    @Req() req: FastifyRequest,
-    @Param('provider') provider: 'google' | 'kakao' | 'naver',
-  ): Promise<void> {
-    return this.socialService.unlinkSocialAccount({
-      id: req.user!.id,
-      provider,
-    });
-  }
 }
