@@ -360,5 +360,39 @@ describe('SocialService', () => {
         },
       });
     });
+    it('nodeEnv가 "test"일 경우 revokeSocialAccess가 호출되지 않아야 합니다.', async () => {
+      jest.mock('axios', () => ({
+        default: {
+          post: jest.fn(),
+        },
+      }));
+
+      const axios = (await import('axios')).default;
+
+      const mockUser = { id: 1 };
+      const mockAccount = { provider: 'google', providerId: 'google-id' };
+      const persist = jest.fn();
+
+      const { socialService } = await setupSocialServiceTest({
+        config: { 'app.nodeEnv': 'test' },
+        userRepo: {
+          findOne: jest.fn().mockResolvedValue(mockUser),
+        },
+        socialRepo: {
+          find: jest.fn().mockResolvedValue([{ provider: 'local' }]),
+          findOne: jest.fn().mockResolvedValue(mockAccount),
+          getEntityManager: jest.fn().mockReturnValue({ removeAndFlush: persist }),
+        },
+        tokenService: {
+          generateOAuthToken: jest.fn().mockResolvedValue('google-token'),
+        },
+      });
+
+      const input: UnlinkSocialAccountInput = { id: 1, provider: 'google' };
+      await socialService.unlinkSocialAccount(input);
+
+      expect(axios.post).not.toHaveBeenCalled();
+      expect(persist).toHaveBeenCalledWith(mockAccount);
+    });
   });
 });

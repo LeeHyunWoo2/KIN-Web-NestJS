@@ -100,5 +100,17 @@ describe('EmailService', () => {
         EmailSendFailedException,
       );
     });
+    it('nodeEnv가 "test"일 경우 더 이상 진행되지 않아야 합니다', async () => {
+      const { emailService } = await setupEmailServiceTest({
+        config: {
+          'app.nodeEnv': 'test',
+        },
+      });
+
+      const result = await emailService.sendVerificationEmail({ email: 'test@email.com' });
+
+      expect(createTransportMock).not.toHaveBeenCalled();
+      expect(result).toBeUndefined();
+    });
   });
 });

@@ -151,10 +151,6 @@ export class TokenService {
   }
 
   async invalidateAccessToken(accessToken: string): Promise<void> {
-    if (this.configService.get<string>('app.nodeEnv') === 'test') {
-      await this.redisClient.set(`blacklist:${accessToken}`, 'true', 'EX', 3600);
-      return;
-    }
     const decoded: AccessTokenPayload = await this.jwtService.decode(accessToken);
     if (!decoded) return;
     const ttl = decoded.exp ? Math.floor((decoded.exp * 1000 - Date.now()) / 1000) : 0;

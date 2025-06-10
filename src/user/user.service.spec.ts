@@ -804,6 +804,35 @@ describe('UserService', () => {
       expect(tokenService.deleteRefreshTokenFromRedis).toHaveBeenCalledWith(decoded.id);
     });
 
+    it('refreshToken 검증 중 예외가 발생(이미 삭제된 경우)해도 삭제 처리는 계속되어야 합니다', async () => {
+      const refreshToken = 'invalid-refresh-token';
+      const accessToken = 'valid-access-token';
+
+      const { userService, tokenService } = await setupUserServiceTest({
+        tokenService: {
+          verifyRefreshToken: jest.fn().mockRejectedValue(new Error('Invalid refresh token')),
+          invalidateAccessToken: jest.fn(),
+          deleteRefreshTokenFromRedis: jest.fn(),
+        },
+        userRepo: {
+          findOne: jest.fn().mockResolvedValue(null),
+        },
+      });
+
+      const input: DeleteUserInput = {
+        id: 123,
+        refreshToken,
+        accessToken,
+      };
+
+      await userService.deleteUser(input);
+
+      expect(tokenService.verifyRefreshToken).toHaveBeenCalledWith(refreshToken);
+      expect(tokenService.invalidateAccessToken).toHaveBeenCalledWith(accessToken);
+
+      expect(tokenService.deleteRefreshTokenFromRedis).not.toHaveBeenCalled();
+    });
+
     it('accessToken이 주어지면 invalidateAccessToken을 호출해야 합니다', async () => {
       const { userService, tokenService } = await setupUserServiceTest({
         tokenService: {
