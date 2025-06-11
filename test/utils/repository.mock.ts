@@ -1,25 +1,42 @@
-export interface MockRepository<T = any> {
-  find?: jest.Mock;
-  findOne: jest.Mock;
-  findAll?: jest.Mock;
-  findAndCount?: jest.Mock;
-  create: jest.Mock;
-  getEntityManager: jest.Mock;
-  persistAndFlush?: jest.Mock;
-  flush?: jest.Mock;
-  nativeInsert?: jest.Mock;
-  removeAndFlush?: jest.Mock;
+export interface MockRepository<T = unknown> {
+  find?: jest.Mock<Promise<T[]>, unknown[]>;
+  findOne: jest.Mock<Promise<T | null>, unknown[]>;
+  findAll?: jest.Mock<Promise<T[]>, unknown[]>;
+  findAndCount?: jest.Mock<Promise<[T[], number]>, unknown[]>;
+  create: jest.Mock<T, [Partial<T>?]>;
+  getEntityManager: jest.Mock<
+    {
+      persistAndFlush: jest.Mock<Promise<void>, [T]>;
+      flush: jest.Mock<Promise<void>, []>;
+      removeAndFlush: jest.Mock<Promise<void>, [T]>;
+    },
+    []
+  >;
+  persistAndFlush?: jest.Mock<Promise<void>, [T]>;
+  flush?: jest.Mock<Promise<void>, []>;
+  nativeInsert?: jest.Mock<Promise<void>, [T]>;
+  removeAndFlush?: jest.Mock<Promise<void>, [T]>;
 }
 
-export const createMockRepository = <T = any>(
+export const createMockRepository = <T = unknown>(
   overrides: Partial<MockRepository<T>> = {},
-): MockRepository<T> => ({
-  findOne: jest.fn(),
-  create: jest.fn(),
-  getEntityManager: jest.fn().mockReturnValue({
-    persistAndFlush: jest.fn(),
-    flush: jest.fn(),
-    removeAndFlush: jest.fn(),
-  }),
-  ...overrides,
-});
+): MockRepository<T> => {
+  const defaultMocks: MockRepository<T> = {
+    findOne: jest.fn() as jest.Mock<Promise<T | null>, unknown[]>,
+    create: jest.fn() as jest.Mock<T, [Partial<T>?]>,
+    getEntityManager: jest.fn().mockReturnValue({
+      persistAndFlush: jest.fn() as jest.Mock<Promise<void>, [T]>,
+      flush: jest.fn() as jest.Mock<Promise<void>, []>,
+      removeAndFlush: jest.fn() as jest.Mock<Promise<void>, [T]>,
+    }) as jest.Mock<
+      {
+        persistAndFlush: jest.Mock<Promise<void>, [T]>;
+        flush: jest.Mock<Promise<void>, []>;
+        removeAndFlush: jest.Mock<Promise<void>, [T]>;
+      },
+      []
+    >,
+  };
+
+  return { ...defaultMocks, ...overrides };
+};

@@ -8,10 +8,8 @@ import {
   Put,
   Req,
   Res,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AccessGuard } from '@/auth/access.guard';
@@ -36,10 +34,7 @@ import { UserService } from '@/user/user.service';
 
 @Controller('user')
 export class UserController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   @Get()
   @UseGuards(AccessGuard)
@@ -98,6 +93,7 @@ export class UserController {
     return this.userService.addLocalAccount(input);
   }
 
+  @HttpCode(204)
   @Delete()
   @UseGuards(AccessGuard)
   async deleteUser(
@@ -113,67 +109,6 @@ export class UserController {
       refreshToken,
     };
     await this.userService.deleteUser(input);
-
-    reply.clearCookie('accessToken');
-    reply.clearCookie('refreshToken');
-  }
-
-  // ------------ E2E 테스트용 API ------------
-
-  @Get('test')
-  @UseGuards(AccessGuard)
-  getPublicUserProfileTest(@Req() req: FastifyRequest): Promise<PublicUserProfileDto> {
-    return this.userService.getPublicProfile(req.user!.id);
-  }
-
-  @Post('test')
-  @UseGuards(AccessGuard)
-  getUserInfoTest(@Req() req: FastifyRequest): Promise<UserInfoResponseDto> {
-    return this.userService.getUserInfo(req.user!.id);
-  }
-
-  @Put('test')
-  @UseGuards(AccessGuard)
-  updateUserTest(
-    @Req() req: FastifyRequest,
-    @Body() updatedData: UpdateUserDto,
-  ): Promise<Partial<PublicUserProfileDto>> {
-    return this.userService.updateUser({ id: req.user!.id, data: updatedData });
-  }
-
-  @Post('test/add-local')
-  @UseGuards(AccessGuard)
-  addLocalAccountTest(@Req() req: FastifyRequest, @Body() dto: AddLocalAccountDto): Promise<void> {
-    return this.userService.addLocalAccount({
-      id: req.user!.id,
-      username: dto.username,
-      email: dto.email,
-      password: dto.password,
-    });
-  }
-
-  @Delete('test')
-  @UseGuards(AccessGuard)
-  @HttpCode(204)
-  async deleteUserTest(
-    @Req() req: FastifyRequest,
-    @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<void> {
-    if (this.configService.get<string>('app.nodeEnv') !== 'test') {
-      throw new UnauthorizedException('Test 전용 API입니다.');
-    }
-
-    const refreshTokenHeader = req.headers['x-refresh-token'];
-    const refreshToken = typeof refreshTokenHeader === 'string' ? refreshTokenHeader : undefined;
-
-    const accessToken =
-      req.cookies?.accessToken ?? req.headers.authorization?.replace('Bearer ', '');
-
-    await this.userService.deleteUser({
-      id: req.user!.id,
-      accessToken,
-      refreshToken,
-    });
 
     reply.clearCookie('accessToken');
     reply.clearCookie('refreshToken');

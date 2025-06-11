@@ -12,7 +12,6 @@ interface SetAuthCookiesInput {
 
 export const setAuthCookies = ({ reply, tokens }: SetAuthCookiesInput): void => {
   const config = getConfig();
-  if (config.get<string>('app.nodeEnv') === 'test') return;
 
   const accessTokenTtl = config.get<number>('auth.accessTokenTtl') ?? 3600;
 

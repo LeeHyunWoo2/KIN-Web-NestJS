@@ -282,6 +282,19 @@ describe('TokenService', () => {
         }),
       ).rejects.toThrow(NoLinkedAccountException);
     });
+    it('nodeEnv가 "test"일 경우 mock OAuth 토큰을 반환해야 합니다', async () => {
+      const { tokenService } = await setupTokenServiceTest({
+        config: {
+          'app.nodeEnv': 'test',
+        },
+      });
+      const provider = 'google';
+      const result = await tokenService.generateOAuthToken({
+        provider: provider,
+        user: mockSocialAccount,
+      });
+      expect(result).toBe(`mock-oauth-${provider}-access-token`);
+    });
     it('provider가 google인 경우 accessToken 을 정상적으로 반환해야 합니다.', async () => {
       jest.mock('axios', () => ({
         default: {
@@ -446,6 +459,42 @@ describe('TokenService', () => {
         role: 'user',
         exp: undefined,
       });
+      await tokenService.invalidateAccessToken(accessToken);
+      expect(redis.set).not.toHaveBeenCalled();
+    });
+    it('exp가 현재 시간보다 과거면 Redis에 저장하지 않아야 합니다.', async () => {
+      const now = Date.now();
+      const mockExp = Math.floor((now - 5000) / 1000);
+      const accessToken = 'expired-access-token';
+
+      const { tokenService, redis } = await setupTokenServiceTest({
+        jwt: {
+          decode: jest.fn().mockReturnValue({
+            id: 123456,
+            email: 'user@email.com',
+            role: 'user',
+            exp: mockExp,
+          }),
+        },
+      });
+
+      await tokenService.invalidateAccessToken(accessToken);
+      expect(redis.set).not.toHaveBeenCalled();
+    });
+    it('exp가 0이면 ttl은 0이 되고 Redis에 저장하지 않아야 합니다.', async () => {
+      const accessToken = 'zero-exp-token';
+
+      const { tokenService, redis } = await setupTokenServiceTest({
+        jwt: {
+          decode: jest.fn().mockReturnValue({
+            id: 1,
+            email: 'a@b.com',
+            role: 'user',
+            exp: 0, // ← 의도적으로 0
+          }),
+        },
+      });
+
       await tokenService.invalidateAccessToken(accessToken);
       expect(redis.set).not.toHaveBeenCalled();
     });

@@ -4,9 +4,14 @@ import { app, configService, jwtService } from './setup-e2e';
 
 describe('EmailController (e2e)', () => {
   const validEmail = 'user@example.com';
+  let serverUrl: string;
+
+  beforeAll(async () => {
+    serverUrl = await app.getUrl();
+  });
 
   it('이메일 인증 요청을 성공해야 합니다.', async () => {
-    const res = await request(app.getHttpServer()).post('/auth/email').send({ email: validEmail });
+    const res = await request(serverUrl).post('/auth/email').send({ email: validEmail });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
@@ -23,12 +28,14 @@ describe('EmailController (e2e)', () => {
       },
     );
 
-    const res = await request(app.getHttpServer()).get(`/auth/email?token=${token}`);
+    const res = await request(serverUrl).get(`/auth/email?token=${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       message: '이메일 인증이 완료되었습니다.',
-      email: { email: validEmail },
+      email: {
+        email: validEmail,
+      },
     });
   });
 });

@@ -5,13 +5,16 @@ import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 
 import { app, tokenService } from './setup-e2e';
+import { generateTokenCookies } from './utils/generate-token-cookies';
 
 describe('SocialController (e2e) - 소셜 연동 해제', () => {
   let em: EntityManager;
-  let accessToken: string;
   let testUser: User;
+  let cookies: string[];
+  let serverUrl: string;
 
   beforeAll(async () => {
+    serverUrl = await app.getUrl();
     em = app.get(EntityManager).fork();
 
     const user = em.create<User>('User', {
@@ -29,29 +32,25 @@ describe('SocialController (e2e) - 소셜 연동 해제', () => {
       socialRefreshToken: 'google-refresh-token',
       user: user,
     } as RequiredEntityData<SocialAccount>);
+
     const kakao = em.create<SocialAccount>('SocialAccount', {
       provider: 'kakao',
       providerId: 'kakao-id',
       socialRefreshToken: 'kakao-refresh-token',
       user: user,
     } as RequiredEntityData<SocialAccount>);
+
     await em.persistAndFlush([google, kakao]);
 
-    const tokenPair = await tokenService.generateTokens(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      3600,
-    );
-    accessToken = tokenPair.accessToken;
+    cookies = await generateTokenCookies(tokenService, {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
   });
 
   it('연동된 소셜 계정을 정상적으로 해제해야 합니다.', async () => {
-    const res = await request(app.getHttpServer())
-      .delete('/auth/social/test/google')
-      .set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(serverUrl).delete('/auth/social/google').set('Cookie', cookies);
 
     expect(res.status).toBe(200);
 

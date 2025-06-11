@@ -5,6 +5,8 @@ import { SocialAccount } from '@/user/entity/social-account.entity';
 import { User } from '@/user/entity/user.entity';
 
 import { app, tokenService } from './setup-e2e';
+import { createUserAndLogin } from './utils/create-user-and-login';
+import { generateTokenCookies } from './utils/generate-token-cookies';
 
 describe('UserController (e2e)', () => {
   const testUser = {
@@ -16,21 +18,13 @@ describe('UserController (e2e)', () => {
   };
 
   let em: EntityManager;
-  let accessToken: string;
-  let refreshToken: string;
-  let accessTokenForSocial: string;
+  let cookies: string[];
+  let cookiesForSocial: string[];
+  let serverUrl: string;
 
   beforeAll(async () => {
-    await request(app.getHttpServer()).post('/auth/register').send(testUser);
-
-    const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
-      username: testUser.username,
-      password: testUser.password,
-      rememberMe: false,
-    });
-
-    accessToken = loginResponse.body.accessToken;
-    refreshToken = loginResponse.body.refreshToken;
+    serverUrl = await app.getUrl();
+    cookies = await createUserAndLogin(app, testUser);
 
     em = app.get(EntityManager).fork();
 
@@ -49,112 +43,100 @@ describe('UserController (e2e)', () => {
     } as RequiredEntityData<SocialAccount>);
     await em.persistAndFlush(google);
 
-    const tokenPair = await tokenService.generateTokens(
-      {
-        id: socialUser.id,
-        email: socialUser.email,
-        role: socialUser.role,
-      },
-      3600,
-    );
-    accessTokenForSocial = tokenPair.accessToken;
+    cookiesForSocial = await generateTokenCookies(tokenService, {
+      id: socialUser.id,
+      email: socialUser.email,
+      role: socialUser.role,
+    });
   });
 
   it('내 public 프로필을 조회해야 합니다.', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/user/test')
-      .set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(serverUrl).get('/user').set('Cookie', cookies);
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('id');
-    expect(response.body).toHaveProperty('name');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('id');
+    expect(res.body).toHaveProperty('name');
   });
 
   it('내 user info를 조회해야 합니다.', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/user/test')
-      .set('Authorization', `Bearer ${accessToken}`);
+    const res = await request(serverUrl).post('/user').set('Cookie', cookies);
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty('id');
-    expect(response.body).toHaveProperty('username');
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty('id');
+    expect(res.body).toHaveProperty('username');
   });
 
   it('정상적으로 비밀번호를 재설정해야 합니다.', async () => {
-    const response = await request(app.getHttpServer()).put('/user/password').send({
+    const res = await request(serverUrl).put('/user/password').send({
       email: testUser.email,
       newPassword: 'NewPass123!',
     });
 
-    expect(response.status).toBe(200);
+    expect(res.status).toBe(200);
   });
 
   it('로컬 계정을 성공적으로 추가해야 합니다.', async () => {
-    const response = await request(app.getHttpServer())
-      .post('/user/test/add-local')
-      .set('Authorization', `Bearer ${accessTokenForSocial}`)
+    const res = await request(serverUrl)
+      .post('/user/change-local')
+      .set('Cookie', cookiesForSocial)
       .send({
         username: 'linkedlocal',
         email: 'linked@email.com',
         password: 'Secure1@pass',
       });
 
-    expect(response.status).toBe(201);
+    expect(res.status).toBe(201);
   });
 
   describe('유저 찾기', () => {
     it('존재하는 이메일로 조회 시 계정 유형이 SNS 또는 Local이어야 합니다.', async () => {
-      const response = await request(app.getHttpServer()).post('/user/find').send({
+      const res = await request(serverUrl).post('/user/find').send({
         input: testUser.email,
         inputType: 'email',
         fetchUsername: true,
       });
 
-      expect(response.status).toBe(200);
-      expect(response.body.signal).toBe('user_found');
-      expect(['Local', 'SNS']).toContain(response.body.accountType);
+      expect(res.status).toBe(200);
+      expect(res.body.signal).toBe('user_found');
+      expect(['Local', 'SNS']).toContain(res.body.accountType);
     });
 
     it('존재하지 않는 이메일이면 user_not_found를 반환해야 합니다.', async () => {
-      const response = await request(app.getHttpServer()).post('/user/find').send({
+      const res = await request(serverUrl).post('/user/find').send({
         input: 'nonexistent@email.com',
         inputType: 'email',
         fetchUsername: true,
       });
 
-      expect(response.status).toBe(200);
-      expect(response.body.signal).toBe('user_not_found');
+      expect(res.status).toBe(200);
+      expect(res.body.signal).toBe('user_not_found');
     });
 
     it('존재하는 username으로 조회 시 username을 반환해야 합니다.', async () => {
-      const response = await request(app.getHttpServer()).post('/user/find').send({
+      const res = await request(serverUrl).post('/user/find').send({
         input: testUser.username,
         inputType: 'username',
         fetchUsername: true,
       });
 
-      expect(response.status).toBe(200);
-      expect(response.body.signal).toBe('user_found');
-      expect(response.body.username).toBe(testUser.username);
+      expect(res.status).toBe(200);
+      expect(res.body.signal).toBe('user_found');
+      expect(res.body.username).toBe(testUser.username);
     });
   });
 
   it('유저 이름을 업데이트해야 합니다.', async () => {
-    const response = await request(app.getHttpServer())
-      .put('/user/test')
-      .set('Authorization', `Bearer ${accessToken}`)
+    const res = await request(serverUrl)
+      .put('/user')
+      .set('Cookie', cookies)
       .send({ name: '업데이트이름' });
 
-    expect(response.status).toBe(200);
-    expect(response.body.name).toBe('업데이트이름');
+    expect(res.status).toBe(200);
+    expect(res.body.name).toBe('업데이트이름');
   });
 
   it('내 계정을 탈퇴해야 합니다.', async () => {
-    const response = await request(app.getHttpServer())
-      .delete('/user/test')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .set('X-Refresh-Token', refreshToken);
-
-    expect(response.status).toBe(204);
+    const res = await request(serverUrl).delete('/user').set('Cookie', cookies);
+    expect(res.status).toBe(204);
   });
 });
